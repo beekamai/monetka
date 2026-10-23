@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Монетка</string>
+    <string name="title_activity_main">Монетка</string>
+    <string name="package_name">com.beekamai.budget</string>
+    <string name="custom_url_scheme">com.beekamai.budget</string>
+</resources>

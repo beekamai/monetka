@@ -1,0 +1,6 @@
+{
+  "appId": "com.beekamai.budget",
+  "appName": "Монетка",
+  "webDir": "dist",
+  "android": { "backgroundColor": "#0E0F12" }
+}
