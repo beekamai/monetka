@@ -8,8 +8,9 @@ import {
   beforeRestore, createSaver, dropBeforeRestore, dropBroken, exportBroken, hasBroken, load, pickFile, saveBeforeRestore, saveFile,
 } from './storage.ts';
 import { exportMonth, importWorkbook } from './xlsxio.ts';
+import { Onboarding } from './onboarding.tsx';
 import { DayBars, Donut, Progress, TrendChart } from './charts.tsx';
-import { Money, Seg, Sheet, haptic, popBack, useSwipe } from './ui.tsx';
+import { GlassDefs, Money, Portal, Seg, Sheet, SwipeArea, haptic, popBack, stepOption, useBack, useSwipe } from './ui.tsx';
 
 type Tab = 'overview' | 'ops' | 'plan' | 'more';
 const TABS: readonly Tab[] = ['overview', 'ops', 'plan', 'more'];
@@ -52,6 +53,7 @@ export function App() {
         if (q.get('theme') === 'dark' || q.get('theme') === 'light') st.theme = q.get('theme') as ThemeMode;
         const t = q.get('tab') as Tab | null;
         if (t && TABS.includes(t)) setTab(t);
+        if (q.has('onboarding')) st.onboarded = false;
         return { state: st, seq: 0, persist: false, notice: undefined };
       })
       : load();
@@ -132,8 +134,8 @@ export function App() {
     el.style.transition = 'none';
     el.style.transform = `translateX(${dx * (edge ? 0.12 : 0.35)}px)`;
   };
-  const swipeTabs = useSwipe((d) => { const t = TABS[TABS.indexOf(tabRef.current) + d]; if (t) goTab(t); }, dragContent);
-  const swipeMonth = useSwipe((d) => goMonth(d), undefined, true);
+  const swipeTabs = useSwipe((d) => { const t = TABS[TABS.indexOf(tabRef.current) + d]; if (!t) return false; goTab(t); }, { onDrag: dragContent });
+  const swipeMonth = useSwipe((d) => { goMonth(d); });
 
   if (!s || !m) return <div class="splash" />;
 
@@ -159,9 +161,12 @@ export function App() {
   };
 
   const isCurrent = month === monthKey(todayISO());
+  const dq = Capacitor.isNativePlatform() ? null : new URLSearchParams(location.search);
+  const obFreeze = dq?.has('demo') && dq.has('obstep') ? { step: Number(dq.get('obstep')), t: Number(dq.get('obt') ?? 3) } : undefined;
 
   return (
     <div class="app">
+      {s.style === 'glass' && <GlassDefs />}
       <header class="top" {...swipeMonth}>
         <button class="icon-btn" aria-label="Предыдущий месяц" onClick={() => goMonth(-1)}>‹</button>
         <button class="month" aria-label={isCurrent ? monthTitle(month) : `${monthTitle(month)}, вернуться к текущему`} onClick={() => goMonth(0)}>
@@ -180,7 +185,7 @@ export function App() {
             </section>
           )}
           {tab === 'overview' && <Overview s={s} m={m} month={month} onEdit={setEditing} onBackup={() => goTab('more')} />}
-          {tab === 'ops' && <Ops s={s} m={m} onEdit={setEditing} />}
+          {tab === 'ops' && <Ops s={s} m={m} onEdit={setEditing} update={update} />}
           {tab === 'plan' && <Plan s={s} m={m} month={month} update={update} notify={notify} />}
           {tab === 'more' && <More s={s} m={m} month={month} readOnly={!persist.current} current={() => sRef.current!} update={update} replace={replace} notify={notify} />}
         </div>
@@ -188,8 +193,8 @@ export function App() {
 
       {(tab === 'overview' || tab === 'ops') && (
         <div class="fabs">
-          <button class="fab ghost" onClick={() => { haptic(); setEditing('new-income'); }}>+ Доход</button>
-          <button class="fab" onClick={() => { haptic(); setEditing('new-expense'); }}>+ Расход</button>
+          <button class="fab income" onClick={() => { haptic(); setEditing('new-income'); }}>+ Доход</button>
+          <button class="fab expense" onClick={() => { haptic(); setEditing('new-expense'); }}>+ Расход</button>
         </div>
       )}
 
@@ -220,6 +225,10 @@ export function App() {
             setEditing(null);
           }} />
       )}
+      {!s.onboarded && (
+        <Onboarding style={s.style ?? 'minimal'} onStyle={(k) => update((d) => { d.style = k; })} freeze={obFreeze}
+          onDone={() => { haptic(true); update((d) => { d.onboarded = true; }); }} />
+      )}
       {toast && (
         <div class="toast" key={toast.id} role="status">
           <span>{toast.text}</span>
@@ -232,8 +241,13 @@ export function App() {
 
 type M = ReturnType<typeof summarize>;
 
+const DAY_KINDS = [['expense', 'Траты'], ['income', 'Доходы']] as const;
+const OPS_FILTERS = [['all', 'Все'], ['expense', 'Расходы'], ['income', 'Доходы']] as const;
+const PLAN_KINDS = [['expense', 'Расходы'], ['income', 'Доходы']] as const;
+
 function Overview({ s, m, month, onEdit, onBackup }: { s: State; m: M; month: string; onEdit: (t: Tx) => void; onBackup: () => void }) {
   const [dayKind, setDayKind] = useState<Kind>('expense');
+  const daySwipe = useSwipe((d) => stepOption(DAY_KINDS, dayKind, d, setDayKind), { short: true });
   const trend = useMemo(() => monthTrend(s, month, 6), [s, month]);
   const slices = m.expenseRows.filter((r) => r.fact > 0 && !r.cat.savings).sort((a, b) => b.fact - a.fact)
     .map((r) => ({ label: r.cat.name, value: r.fact, color: r.cat.color }));
@@ -265,7 +279,8 @@ function Overview({ s, m, month, onEdit, onBackup }: { s: State; m: M; month: st
 
       <section class="grid2">
         <Stat label="Доходы" value={m.income} sub={m.incomePlan ? `план ${rub(m.incomePlan)}` : m.tips ? `чаевые ${rub(m.tips)}` : ''} tone="pos" />
-        <Stat label="Расходы" value={m.spent} sub={m.spentPlan ? `план ${rub(m.spentPlan)}` : 'без копилки'} tone={overPlan ? 'neg' : undefined} />
+        <Stat label="Расходы" value={m.spent} tone="neg"
+          sub={m.spentPlan ? `${overPlan ? 'перерасход · ' : ''}план ${rub(m.spentPlan)}` : 'без копилки'} />
         <Stat label="Отложено" value={m.saved} sub={`в общем ${rub(m.stash)}`} />
         <Stat label="Всего списано" value={m.expenseTotal} sub="с копилкой" />
       </section>
@@ -285,14 +300,14 @@ function Overview({ s, m, month, onEdit, onBackup }: { s: State; m: M; month: st
         )}
       </section>
 
-      <section class="card">
+      <section class="card" {...daySwipe}>
         <div class="card-head">
           <h2>По дням</h2>
-          <Seg small value={dayKind} onChange={setDayKind} options={[['expense', 'Траты'], ['income', 'Доходы']]} />
+          <Seg small value={dayKind} onChange={setDayKind} options={DAY_KINDS} />
         </div>
         {dayTotal === 0 ? <Empty text={dayKind === 'income' ? 'Доходов в этом месяце пока нет' : 'Здесь появится график трат'} /> : (
           <>
-            <DayBars data={m.byDay} today={today} kind={dayKind} />
+            <div key={dayKind} class={dayKind === 'income' ? 'swap next' : 'swap prev'}><DayBars data={m.byDay} today={today} kind={dayKind} /></div>
             <p class="hint">Яркий столбец — самый {dayKind === 'income' ? 'доходный' : 'затратный'} день. Копилка в траты не входит.</p>
           </>
         )}
@@ -348,23 +363,74 @@ function needsBackup(s: State): boolean {
   return (Date.now() - new Date(s.lastBackup + 'T00:00').getTime()) / 86400000 > 30;
 }
 
-function TxRow({ s, t, i = 0, onClick }: { s: State; t: Tx; i?: number; onClick?: () => void }) {
+const LONG_PRESS = 450;
+
+function TxRow({ s, t, i = 0, onClick, onLongPress, selected }: {
+  s: State; t: Tx; i?: number; onClick?: () => void; onLongPress?: () => void; selected?: boolean;
+}) {
   const cat = s.categories.find((c) => c.id === t.categoryId);
+  const press = useRef<{ timer: ReturnType<typeof setTimeout>; x: number; y: number; fired: boolean } | null>(null);
+  const cancel = () => { if (press.current) clearTimeout(press.current.timer); };
+  const long = onLongPress && {
+    onTouchStart: (e: TouchEvent) => {
+      const p = e.touches[0];
+      const st = { x: p.clientX, y: p.clientY, fired: false, timer: setTimeout(() => { st.fired = true; haptic(true); onLongPress(); }, LONG_PRESS) };
+      press.current = st;
+    },
+    onTouchMove: (e: TouchEvent) => {
+      const p = e.touches[0], st = press.current;
+      if (st && Math.hypot(p.clientX - st.x, p.clientY - st.y) > 10) cancel();
+    },
+    onTouchEnd: cancel,
+    onTouchCancel: cancel,
+    onContextMenu: (e: Event) => { e.preventDefault(); if (!press.current?.fired) onLongPress(); },
+  };
+  const click = () => {
+    // Палец, удержанный для выбора, отпускается кликом — его не считать вторым нажатием
+    if (press.current?.fired) { press.current = null; return; }
+    onClick?.();
+  };
   return (
-    <button class="tx" style={{ '--i': Math.min(i, 12) }} onClick={onClick} disabled={!onClick}>
-      <i class="dot" style={{ background: cat?.color ?? 'var(--muted)' }} />
+    <button class={selected ? 'tx sel' : 'tx'} style={{ '--i': Math.min(i, 12) }} onClick={click} disabled={!onClick}
+      aria-pressed={selected === undefined ? undefined : selected} {...long}>
+      {selected === undefined
+        ? <i class="dot" style={{ background: cat?.color ?? 'var(--muted)' }} />
+        : <i class={selected ? 'check on' : 'check'} aria-hidden="true" />}
       <span class="tx-main">
         <span class="tx-cat">{cat?.name ?? 'Без категории'}</span>
         {t.desc && <span class="tx-desc">{t.desc}</span>}
       </span>
-      <span class={t.kind === 'income' ? 'tx-amt pos' : 'tx-amt'}>{t.kind === 'income' ? '+' : '−'}{rub(t.amount)}</span>
+      <span class={t.kind === 'income' ? 'tx-amt pos' : 'tx-amt neg'}>{t.kind === 'income' ? '+' : '−'}{rub(t.amount)}</span>
     </button>
   );
 }
 
-function Ops({ s, m, onEdit }: { s: State; m: M; onEdit: (t: Tx) => void }) {
+function Ops({ s, m, onEdit, update }: { s: State; m: M; onEdit: (t: Tx) => void; update: Update }) {
   const [filter, setFilter] = useState<'all' | Kind>('all');
   const [q, setQ] = useState('');
+  const [sel, setSel] = useState<Set<string>>(new Set());
+  const [moving, setMoving] = useState(false);
+  const selecting = sel.size > 0;
+  useEffect(() => {
+    document.body.classList.toggle('selecting', selecting);
+    return () => document.body.classList.remove('selecting');
+  }, [selecting]);
+  const toggle = (id: string) => setSel((p) => { const n = new Set(p); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+  const add = (id: string) => setSel((p) => (p.has(id) ? p : new Set(p).add(id)));
+  const picked = s.txs.filter((t) => sel.has(t.id));
+  const kinds = new Set(picked.map((t) => t.kind));
+  const moveKind = kinds.size === 1 ? [...kinds][0] : null;
+  const removeSel = () => {
+    const n = sel.size;
+    update((d) => { d.txs = d.txs.filter((t) => !sel.has(t.id)); }, `Удалено операций: ${n}`);
+    setSel(new Set());
+  };
+  const moveSel = (catId: string) => {
+    const n = sel.size;
+    update((d) => { for (const t of d.txs) if (sel.has(t.id)) t.categoryId = catId; }, `Перенесено операций: ${n}`);
+    setMoving(false);
+    setSel(new Set());
+  };
   const needle = q.trim().toLowerCase();
   const list = m.txs.filter((t) => (filter === 'all' || t.kind === filter) &&
     (!needle || t.desc.toLowerCase().includes(needle) ||
@@ -376,8 +442,8 @@ function Ops({ s, m, onEdit }: { s: State; m: M; onEdit: (t: Tx) => void }) {
   let n = 0;
 
   return (
-    <>
-      <Seg value={filter} onChange={setFilter} options={[['all', 'Все'], ['expense', 'Расходы'], ['income', 'Доходы']]} />
+    <SwipeArea onSwipe={(d) => stepOption(OPS_FILTERS, filter, d, setFilter)}>
+      <Seg value={filter} onChange={setFilter} options={OPS_FILTERS} />
       <div class="search-wrap">
         <input class="search" type="search" placeholder="Поиск по описанию или категории" value={q} onInput={(e) => setQ(e.currentTarget.value)} />
         {q && <button class="search-clear" aria-label="Очистить поиск" onClick={() => setQ('')}>✕</button>}
@@ -388,13 +454,47 @@ function Ops({ s, m, onEdit }: { s: State; m: M; onEdit: (t: Tx) => void }) {
         const dayTotal = txs.reduce((a, t) => a + (t.kind === 'income' ? t.amount : -t.amount), 0);
         return (
           <section class="card day">
-            <div class="day-head"><span>{fmt(date)}</span><span class={dayTotal >= 0 ? 'pos' : 'muted'}>{signedRub(dayTotal)}</span></div>
-            {txs.map((t) => <TxRow s={s} t={t} i={n++} onClick={() => onEdit(t)} />)}
+            <div class="day-head"><span>{fmt(date)}</span><span class={dayTotal >= 0 ? 'pos' : 'neg'}>{signedRub(dayTotal)}</span></div>
+            {txs.map((t) => (
+              <TxRow s={s} t={t} i={n++} selected={selecting ? sel.has(t.id) : undefined}
+                onClick={() => (selecting ? toggle(t.id) : onEdit(t))} onLongPress={() => add(t.id)} />
+            ))}
           </section>
         );
       })}
-    </>
+      {!selecting && list.length > 1 && <p class="hint center">Зажми операцию, чтобы выбрать несколько</p>}
+      {selecting && (
+        <SelectBack onBack={() => setSel(new Set())} />
+      )}
+      {selecting && (
+        <Portal>
+          <div class="selbar" role="toolbar" aria-label="Выбранные операции">
+            <button class="icon-btn" aria-label="Снять выбор" onClick={() => setSel(new Set())}>✕</button>
+            <span class="selbar-count">{sel.size}</span>
+            <button class="selbar-btn" onClick={() => setSel(new Set(list.map((t) => t.id)))}>Все</button>
+            <button class="selbar-btn" disabled={!moveKind} onClick={() => setMoving(true)}>Перенести</button>
+            <button class="selbar-btn danger" onClick={removeSel}>Удалить</button>
+            {!moveKind && <span class="selbar-hint">Перенести можно только расходы или только доходы</span>}
+          </div>
+        </Portal>
+      )}
+      {moving && moveKind && (
+        <Sheet title={`Перенести ${sel.size} в категорию`} onClose={() => setMoving(false)}>
+          <div class="chips" data-noswipe>
+            {s.categories.filter((c) => c.kind === moveKind).map((c) => (
+              <button class="chipsel" onClick={() => moveSel(c.id)}><i class="dot" style={{ background: c.color }} />{c.name}</button>
+            ))}
+          </div>
+        </Sheet>
+      )}
+    </SwipeArea>
   );
+}
+
+/** Пока выбраны операции, «назад» снимает выбор, а не уходит со вкладки */
+function SelectBack({ onBack }: { onBack: () => void }) {
+  useBack(onBack);
+  return null;
 }
 
 function Plan({ s, m, month, update, notify }: { s: State; m: M; month: string; update: Update; notify: Notify }) {
@@ -418,8 +518,8 @@ function Plan({ s, m, month, update, notify }: { s: State; m: M; month: string; 
   };
 
   return (
-    <>
-      <Seg value={kind} onChange={setKind} options={[['expense', 'Расходы'], ['income', 'Доходы']]} />
+    <SwipeArea onSwipe={(d) => stepOption(PLAN_KINDS, kind, d, setKind)}>
+      <Seg value={kind} onChange={setKind} options={PLAN_KINDS} />
       <section class="card totals">
         <div><span class="stat-lbl">План</span><Money value={plan} /></div>
         <div><span class="stat-lbl">Факт</span><Money value={fact} /></div>
@@ -454,7 +554,7 @@ function Plan({ s, m, month, update, notify }: { s: State; m: M; month: string; 
           Сбросить планы месяца к значениям по умолчанию
         </button>
       )}
-    </>
+    </SwipeArea>
   );
 }
 
@@ -593,7 +693,8 @@ function More({ s, m, month, readOnly, current, update, replace, notify }: {
 
       <section class="card gestures">
         <h2>Жесты</h2>
-        <p class="hint">Свайп влево-вправо по экрану — соседняя вкладка. По шапке с месяцем — соседний месяц, тап по месяцу — текущий. По переключателю — соседний раздел. Шторку можно смахнуть вниз.</p>
+        <p class="hint">Длинный свайп по экрану — соседняя вкладка, короткий — соседний раздел. По шапке с месяцем — соседний месяц, тап по месяцу — текущий. Зажми операцию, чтобы выбрать несколько. Шторку можно смахнуть вниз.</p>
+        <button class="link" onClick={() => update((d) => { d.onboarded = false; })}>Показать знакомство</button>
       </section>
 
       {editCat && (

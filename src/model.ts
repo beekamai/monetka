@@ -42,6 +42,8 @@ export interface State {
   style?: ThemeStyle;
   /** YYYY-MM-DD последней резервной копии — для напоминания */
   lastBackup?: string;
+  /** Знакомство при первом запуске пройдено или пропущено */
+  onboarded?: boolean;
 }
 
 export const PALETTE = [
@@ -170,6 +172,7 @@ export function normalizeReport(raw: unknown): { state: State; dropped: number }
     style: raw.style === 'glass' ? 'glass' : 'minimal',
   };
   if (validDate(raw.lastBackup)) state.lastBackup = raw.lastBackup;
+  if (raw.onboarded === true) state.onboarded = true;
   return { state, dropped };
 }
 

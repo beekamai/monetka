@@ -179,7 +179,7 @@ h3 { margin: 0; font-size: 18px; }
 .style-prev.glass { background: linear-gradient(135deg, #B9A7FF, #FFC2A8 55%, #9FE3D0); }
 .style-prev.glass i { background: rgba(255,255,255,.45); border: 1px solid rgba(255,255,255,.7); backdrop-filter: blur(6px); }
 
-.fabs { position: fixed; left: 0; right: 0; bottom: calc(env(safe-area-inset-bottom) + 74px); display: flex; justify-content: center; gap: 10px; pointer-events: none; z-index: 6; animation: rise .3s both; }
+.fabs { position: fixed; left: 0; right: 0; bottom: calc(env(safe-area-inset-bottom) + 74px); display: flex; justify-content: center; gap: 10px; pointer-events: none; z-index: 6; }
 .fab { pointer-events: auto; padding: 13px 20px; border-radius: 999px; background: var(--accent); color: var(--accent-ink); font-weight: 650; box-shadow: 0 6px 20px rgba(0,0,0,.18); transition: transform .12s; }
 .fab:active { transform: scale(.95); }
 .fab.ghost { background: var(--sheet); color: var(--text); border: 1px solid var(--line); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); }
@@ -248,3 +248,106 @@ h3 { margin: 0; font-size: 18px; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-delay: 0s !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
+
+/* Разделы, листаемые коротким свайпом */
+.content { min-height: calc(100dvh - 150px); }
+.swipe-area { flex: 1; display: flex; flex-direction: column; gap: 12px; }
+.swipe-area > * { animation: rise .42s cubic-bezier(.2,.8,.2,1) both; }
+.swipe-area > :nth-child(2) { animation-delay: 40ms; } .swipe-area > :nth-child(3) { animation-delay: 80ms; }
+.swipe-area > :nth-child(n+4) { animation-delay: 120ms; }
+.swap.next { animation: inNext .28s cubic-bezier(.2,.8,.2,1); } .swap.prev { animation: inPrev .28s cubic-bezier(.2,.8,.2,1); }
+.hint.center { text-align: center; }
+
+/* Кнопки добавления: доход заметнее, расход спокойнее */
+.fab.income { background: var(--pos); color: #fff; box-shadow: 0 6px 18px color-mix(in srgb, var(--pos) 35%, transparent); }
+.fab.expense { background: var(--sheet); color: var(--neg); border: 1px solid color-mix(in srgb, var(--neg) 30%, transparent);
+  box-shadow: 0 4px 14px rgba(0,0,0,.08); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); }
+[data-theme='dark'] .fab.income { color: #0B1A12; }
+
+/* Выбор нескольких операций */
+body.selecting .fabs { display: none; }
+/* Выбранная строка: подсветка шире строки на 8px с каждой стороны и без разделителей вокруг — не обрезается о края и линии */
+.tx { transition: background .15s, border-color .15s; }
+.tx.sel { background: color-mix(in srgb, var(--accent) 13%, transparent); border-radius: 14px; margin-inline: -8px; padding-inline: 8px; width: calc(100% + 16px); border-top-color: transparent; }
+.tx.sel + .tx, .day .tx.sel:first-of-type { border-top-color: transparent; }
+.tx.sel + .tx.sel { margin-top: 3px; }
+.tx-amt.neg { color: var(--neg); }
+.check { width: 20px; height: 20px; flex: none; border-radius: 50%; border: 2px solid var(--muted); position: relative; transition: background .15s, border-color .15s; }
+.check.on { background: var(--accent); border-color: var(--accent); }
+.check.on::after { content: ''; position: absolute; left: 5px; top: 1px; width: 5px; height: 10px; border: solid var(--accent-ink); border-width: 0 2px 2px 0; transform: rotate(45deg); }
+.selbar { position: fixed; left: 50%; transform: translateX(-50%); width: calc(100% - 24px); max-width: 536px; bottom: calc(env(safe-area-inset-bottom) + 76px); z-index: 8;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 8px; border-radius: 20px; background: var(--sheet); border: 1px solid var(--line);
+  box-shadow: 0 10px 30px rgba(0,0,0,.18); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); animation: toastIn .28s cubic-bezier(.2,.9,.25,1.1); }
+.selbar-count { font-weight: 700; font-size: 17px; min-width: 24px; }
+.selbar-btn { margin-left: auto; padding: 9px 12px; border-radius: 12px; background: var(--track); font-weight: 600; font-size: 14px; }
+.selbar-btn + .selbar-btn { margin-left: 0; }
+.selbar-btn.danger { color: var(--neg); background: var(--chip-neg); }
+.selbar-btn:disabled { opacity: .4; }
+.selbar-hint { flex-basis: 100%; font-size: 12px; color: var(--muted); text-align: center; }
+
+/* ===== Стекло ===== */
+[data-style='glass'][data-theme='light'] {
+  --bg: #E9ECFA; --glass-hi: rgba(255,255,255,.62); --glass-lo: rgba(255,255,255,.16); --glass-rim: rgba(255,255,255,.95);
+  --glass-shadow: 0 12px 32px rgba(50,60,140,.16), 0 2px 6px rgba(50,60,140,.08);
+}
+[data-style='glass'][data-theme='dark'] {
+  --bg: #090A14; --glass-hi: rgba(255,255,255,.14); --glass-lo: rgba(255,255,255,.03); --glass-rim: rgba(255,255,255,.4);
+  --glass-shadow: 0 14px 36px rgba(0,0,0,.45);
+}
+[data-style='glass'] body::before {
+  background:
+    radial-gradient(28vmax 28vmax at 12% 14%, #8F7BFF 0, transparent 70%),
+    radial-gradient(24vmax 24vmax at 88% 22%, #FF9F7A 0, transparent 70%),
+    radial-gradient(30vmax 30vmax at 30% 62%, #6FD6BC 0, transparent 70%),
+    radial-gradient(22vmax 22vmax at 85% 72%, #FF7FB8 0, transparent 70%),
+    radial-gradient(26vmax 26vmax at 55% 98%, #7FB4FF 0, transparent 70%);
+  opacity: 1;
+}
+[data-style='glass'][data-theme='dark'] body::before {
+  background:
+    radial-gradient(28vmax 28vmax at 12% 14%, #4B37C9 0, transparent 70%),
+    radial-gradient(24vmax 24vmax at 88% 22%, #A2405A 0, transparent 70%),
+    radial-gradient(30vmax 30vmax at 30% 62%, #0F6F66 0, transparent 70%),
+    radial-gradient(22vmax 22vmax at 85% 72%, #7A2A86 0, transparent 70%),
+    radial-gradient(26vmax 26vmax at 55% 98%, #1D4FA8 0, transparent 70%);
+}
+/* Плитка: блик в верхнем углу, яркая кромка и подсветка изнутри — как толстое стекло на свету */
+[data-style='glass'] .card { position: relative; }
+[data-style='glass'] .card, [data-style='glass'] .selbar {
+  background:
+    radial-gradient(120% 70% at 0% 0%, var(--glass-hi), transparent 55%),
+    linear-gradient(160deg, var(--glass-hi), var(--glass-lo) 60%);
+  border: 1px solid transparent;
+  box-shadow: var(--glass-shadow), inset 0 1px 1px var(--glass-rim), inset 0 -1px 1px rgba(255,255,255,.12);
+  -webkit-backdrop-filter: blur(22px) saturate(200%); backdrop-filter: blur(22px) saturate(200%);
+}
+[data-style='glass'] .card::before, [data-style='glass'] .selbar::before {
+  content: ''; position: absolute; inset: -1px; border-radius: inherit; padding: 1px; pointer-events: none;
+  background: linear-gradient(135deg, var(--glass-rim), transparent 35%, transparent 65%, color-mix(in srgb, var(--glass-rim) 55%, transparent));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+}
+/* Жидкое стекло: плавающая панель вкладок и кнопки преломляют фон у краёв (фильтр #lens в App) */
+[data-style='glass'] .tabs {
+  bottom: calc(env(safe-area-inset-bottom) + 10px); width: calc(100% - 24px); max-width: 536px; border-radius: 28px; padding: 6px;
+  background: linear-gradient(160deg, var(--glass-hi), var(--glass-lo)); border: 1px solid var(--glass-rim);
+  box-shadow: var(--glass-shadow), inset 0 1px 1px var(--glass-rim);
+  -webkit-backdrop-filter: blur(14px) saturate(190%); backdrop-filter: blur(14px) saturate(190%);
+  -webkit-backdrop-filter: blur(10px) saturate(190%) url(#lens); backdrop-filter: blur(10px) saturate(190%) url(#lens);
+}
+[data-style='glass'] .tab-pill { left: 6px; top: 6px; width: calc((100% - 12px) / 4); border-radius: 22px;
+  background: color-mix(in srgb, var(--glass-hi) 80%, transparent); box-shadow: inset 0 1px 1px var(--glass-rim), 0 2px 8px rgba(0,0,0,.08); }
+[data-style='glass'] .fabs { bottom: calc(env(safe-area-inset-bottom) + 84px); }
+[data-style='glass'] .selbar { bottom: calc(env(safe-area-inset-bottom) + 84px); }
+[data-style='glass'] .fab { border: 1px solid var(--glass-rim); box-shadow: var(--glass-shadow), inset 0 1px 1px var(--glass-rim);
+  -webkit-backdrop-filter: blur(16px) saturate(190%); backdrop-filter: blur(16px) saturate(190%); }
+[data-style='glass'] .fab.income { background: linear-gradient(160deg, color-mix(in srgb, var(--pos) 92%, #fff), var(--pos)); color: #fff; }
+[data-style='glass'] .fab.expense { background: linear-gradient(160deg, color-mix(in srgb, var(--neg) 16%, transparent), transparent), var(--sheet); color: var(--neg); }
+[data-style='glass'] .seg { background: color-mix(in srgb, var(--glass-lo) 60%, var(--track)); box-shadow: inset 0 1px 2px rgba(0,0,0,.06); }
+[data-style='glass'] .seg-pill { background: linear-gradient(160deg, var(--glass-hi), var(--glass-lo)); box-shadow: inset 0 1px 1px var(--glass-rim), 0 2px 8px rgba(0,0,0,.08);
+  -webkit-backdrop-filter: blur(8px) saturate(180%); backdrop-filter: blur(8px) saturate(180%); }
+[data-style='glass'] .app { padding-bottom: 170px; }
+
+/* Анимированная opacity у предка делает его корнем подложки — backdrop-filter внутри перестаёт видеть фон. Поэтому анимируются сами элементы, а не обёртки. */
+.fab { animation: rise .3s both; }
+.content > .swipe-area { animation: none; }

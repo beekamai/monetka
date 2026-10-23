@@ -6,3 +6,6 @@ android/app/build
 *.apk
 .env*
 .claude/
+promo/out/
+promo/node_modules/
+promo/assets-ext/

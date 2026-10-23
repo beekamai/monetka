@@ -126,7 +126,8 @@ docs/             PLAY_STORE.md — publishing checklist
 
 ### License
 
-MIT.
+[MIT](LICENSE) © 2026 beekamai. Use, modify and sell it freely, including commercially — as long as every copy and
+derivative keeps the copyright notice and the license text, i.e. credits beekamai as the original author.
 
 ---
 
@@ -244,4 +245,5 @@ docs/             PLAY_STORE.md — чек-лист публикации
 
 ### Лицензия
 
-MIT.
+[MIT](LICENSE) © 2026 beekamai. Можно использовать, изменять и продавать, в том числе коммерчески, — при условии,
+что в каждой копии и производной сохранены копирайт и текст лицензии, то есть beekamai указан автором оригинала.

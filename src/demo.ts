@@ -32,6 +32,7 @@ export function demoState(): State {
   }
   s.txs = txs;
   s.lastBackup = todayISO();
+  s.onboarded = true;
   s.months[shiftMonth(now, -5)] = { start: 25000 };
   for (const c of s.categories) {
     if (c.name === 'Питание') c.plan = 22000;

@@ -1,0 +1,103 @@
+/* Сцена ролика 1920×1080: фон, камера, подписи, телефон с интерфейсом приложения, крупные карточки, финал */
+html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: #0B0C1A; }
+#stage, #stage * { animation: none !important; transition: none !important; }
+#stage { position: relative; width: 1920px; height: 1080px; overflow: hidden; background: #0B0C1A; color: #F3F4FA;
+  font-family: 'Inter', system-ui, sans-serif; font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased; }
+#stage button { font-family: inherit; }
+
+/* Фон: тёмная ночь и пятна света (те же цвета, что у стекла в приложении) */
+.bg { position: absolute; inset: -80px; }
+.bg i { position: absolute; border-radius: 50%; filter: blur(90px); }
+.bg .b1 { width: 900px; height: 900px; left: -160px; top: -260px; background: #4B37C9; }
+.bg .b2 { width: 760px; height: 760px; right: -120px; top: -120px; background: #A2405A; }
+.bg .b3 { width: 900px; height: 900px; left: 520px; bottom: -420px; background: #0F6F66; }
+.bg .b4 { width: 600px; height: 600px; right: 220px; bottom: -260px; background: #1D4FA8; }
+.bg .veil { position: absolute; inset: 0; background: radial-gradient(1200px 800px at 50% 45%, rgba(11,12,26,.35), rgba(11,12,26,.9)); filter: none; border-radius: 0; }
+
+#cam { position: absolute; inset: 0; transform-origin: 640px 540px; }
+.layer { position: absolute; inset: 0; }
+
+/* Подписи: на плашке, если под ними интерфейс */
+.cap { position: absolute; font-weight: 800; letter-spacing: -.03em; line-height: 1.02; color: #F3F4FA; white-space: nowrap; }
+.cap .line { display: block; overflow: hidden; padding-bottom: .06em; }
+.cap .line > span { display: inline-block; will-change: transform; }
+.cap.sub { font-weight: 600; letter-spacing: -.01em; color: rgba(243,244,250,.72); }
+.plate { position: absolute; padding: 26px 34px 30px; border-radius: 32px; background: rgba(11,12,26,.94);
+  backdrop-filter: blur(24px) saturate(160%); box-shadow: 0 20px 60px rgba(0,0,0,.35); }
+.plate .cap { position: static; }
+.example { display: inline-block; font: 600 32px/1 'Inter'; letter-spacing: 0; padding: 10px 18px; border-radius: 99px;
+  color: #0B0C1A; background: rgba(243,244,250,.85); }
+
+/* Монетка-палец */
+#coin { position: absolute; left: 0; top: 0; z-index: 50; pointer-events: none; }
+#coin .c { position: absolute; left: 0; top: 0; border-radius: 50%; display: grid; place-items: center; color: #fff; font-weight: 800;
+  background: radial-gradient(circle at 32% 26%, #A9BEFF 0, #5B83FF 42%, #3446C9 100%);
+  box-shadow: 0 18px 40px rgba(20,30,120,.45), inset 0 3px 4px rgba(255,255,255,.65), inset 0 -8px 14px rgba(10,20,90,.3); }
+#coin .c .g { line-height: 1; text-shadow: 0 3px 8px rgba(10,20,90,.35); }
+#coin .c svg { position: absolute; }
+#coin .rip { position: absolute; left: 0; top: 0; border-radius: 50%; border: 4px solid #8FA8FF; }
+#coin .ring { position: absolute; left: 0; top: 0; border-radius: 50%; }
+
+/* Телефон: интерфейс приложения в натуральных css px, масштаб — трансформом */
+.device { position: absolute; left: 0; top: 0; width: 412px; height: 892px; transform-origin: 0 0; border-radius: 56px;
+  box-shadow: 0 0 0 10px #0E1018, 0 0 0 11px rgba(255,255,255,.08), 0 60px 120px rgba(0,0,0,.55); }
+.dev-screen { position: absolute; inset: 0; border-radius: 56px; overflow: hidden; background: var(--bg); color: var(--text);
+  font-family: 'Inter', system-ui, sans-serif; font-size: 15px; line-height: 1.4; }
+.dev-screen[data-style='glass'][data-theme='light'] { background:
+  radial-gradient(300px 300px at 12% 10%, #A08BFF 0, transparent 70%), radial-gradient(260px 260px at 92% 26%, #FFAE8C 0, transparent 70%),
+  radial-gradient(320px 320px at 30% 64%, #7FD9C0 0, transparent 70%), radial-gradient(240px 240px at 88% 78%, #FF8FC0 0, transparent 70%), #E9ECFA; }
+.dev-screen[data-style='glass'][data-theme='dark'] { background:
+  radial-gradient(300px 300px at 12% 10%, #4B37C9 0, transparent 70%), radial-gradient(260px 260px at 92% 26%, #A2405A 0, transparent 70%),
+  radial-gradient(320px 320px at 30% 64%, #0F6F66 0, transparent 70%), radial-gradient(240px 240px at 88% 78%, #7A2A86 0, transparent 70%), #090A14; }
+.dev-top { position: absolute; left: 0; right: 0; top: 0; height: 64px; padding-top: 18px; display: flex; justify-content: center; align-items: center; gap: 28px;
+  font-weight: 650; font-size: 17px; z-index: 3; }
+.dev-top i { font-style: normal; color: var(--muted); font-size: 22px; }
+.dev-pages { position: absolute; left: 0; top: 64px; width: 1236px; bottom: 0; display: flex; }
+.dev-page { width: 412px; flex: none; position: relative; overflow: hidden; }
+.dev-page .scroll { position: absolute; left: 0; right: 0; top: 0; padding: 4px 16px 140px; display: flex; flex-direction: column; gap: 12px; }
+.device .tabs { position: absolute; left: 0; right: 0; bottom: 0; transform: none; width: auto; max-width: none; z-index: 4; padding-bottom: 18px; }
+[data-style='glass'] .device .tabs, .dev-screen[data-style='glass'] .tabs { left: 12px; right: 12px; bottom: 14px; width: auto; }
+.device .tab-pill { transform: translateX(calc(var(--i) * 100%)); }
+.device .selbar, .device .toast { position: absolute; }
+.device .toast { bottom: 96px; left: 50%; }
+.device .selbar { bottom: 84px; left: 50%; width: calc(100% - 24px); }
+.device .tx { animation: none; }
+.dev-wave { position: absolute; inset: 0; }
+
+/* Шторка «Новая операция» */
+.dev-sheet { position: absolute; left: 0; right: 0; bottom: 0; z-index: 6; background: var(--sheet); border-radius: 24px 24px 0 0;
+  padding: 8px 16px 24px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 -10px 40px rgba(0,0,0,.18); }
+.dev-dim { position: absolute; inset: 0; z-index: 5; background: rgba(0,0,0,.42); }
+.dev-sheet .btn.primary { transition: none; }
+
+/* Крупные карточки вне телефона */
+.big-card { position: absolute; border-radius: 40px; background: #F4F5F7; color: #14161A; box-shadow: 0 40px 100px rgba(0,0,0,.45); }
+.trend { left: 150px; top: 230px; width: 1010px; height: 700px; padding: 54px 56px; background: linear-gradient(160deg, rgba(255,255,255,.12), rgba(255,255,255,.04)); color: #F3F4FA;
+  border: 1px solid rgba(255,255,255,.18); backdrop-filter: blur(30px) saturate(160%); box-shadow: 0 40px 100px rgba(0,0,0,.45), inset 0 1px 1px rgba(255,255,255,.3); }
+.trend h3 { margin: 0; font: 700 34px/1 'Inter'; color: #B8BDCC; letter-spacing: .04em; text-transform: uppercase; }
+.trend svg { position: absolute; left: 56px; top: 120px; }
+.trend .legend2 { position: absolute; left: 56px; bottom: 44px; display: flex; gap: 34px; font: 600 28px/1 'Inter'; color: #B8BDCC; }
+.trend .legend2 span { display: flex; align-items: center; gap: 12px; }
+.trend .legend2 i { width: 22px; height: 22px; border-radius: 6px; display: inline-block; }
+
+.sheetgrid { left: 120px; top: 300px; width: 800px; overflow: hidden; border-radius: 28px; background: #fff; color: #202124; }
+.sheetgrid .head { background: #1E8E5A; color: #fff; font: 700 34px/1 'Inter'; padding: 26px 30px; }
+.sheetgrid .row { display: grid; grid-template-columns: 170px 170px 1fr 190px; border-top: 2px solid #E3E6EA; font: 500 28px/1 'Inter'; }
+.sheetgrid .row > span { padding: 24px 18px; border-left: 2px solid #E3E6EA; white-space: nowrap; overflow: hidden; }
+.sheetgrid .row > span:first-child { border-left: 0; }
+.sheetgrid .row.h { font-weight: 700; color: #5F6368; background: #F8F9FA; }
+.fly { position: absolute; left: 0; top: 0; z-index: 30; display: flex; align-items: center; gap: 16px; padding: 0 22px; border-radius: 20px;
+  background: rgba(255,255,255,.95); color: #14161A; font: 650 30px/1 'Inter'; box-shadow: 0 20px 50px rgba(0,0,0,.35); transform-origin: 0 0; white-space: nowrap; }
+.fly .dot { width: 18px; height: 18px; }
+.fly b { margin-left: auto; color: #E0473E; }
+
+.badge { position: absolute; display: flex; align-items: center; gap: 22px; padding: 26px 40px 26px 30px; border-radius: 999px;
+  background: rgba(243,244,250,.1); border: 2px solid rgba(243,244,250,.22); font: 700 60px/1 'Inter'; letter-spacing: -.02em; white-space: nowrap; }
+.badge .ok { width: 64px; height: 64px; border-radius: 50%; background: #1E9E5A; display: grid; place-items: center; }
+
+.endicon { position: absolute; border-radius: 26%; display: grid; place-items: center; overflow: hidden; }
+.verdict-num { font-weight: 800; letter-spacing: -.04em; color: #45C982; }
+
+.demo-note { position: absolute; left: 120px; bottom: 100px; font: 600 28px/1 'Inter'; color: rgba(243,244,250,.75); padding: 10px 16px; border-radius: 99px; background: rgba(11,12,26,.7); }
+.dev-sheet { background: color-mix(in srgb, var(--bg) 96%, #fff 4%); }
+[data-theme='light'] .dev-sheet { background: #fff; }

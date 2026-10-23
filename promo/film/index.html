@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=1920, height=1080" />
+  <title>Монетка — промо</title>
+</head>
+<body>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <filter id="lens" x="0" y="0" width="1" height="1" primitiveUnits="objectBoundingBox" color-interpolation-filters="sRGB">
+      <feImage id="lens-h" x="0" y="0" width="1" height="1" preserveAspectRatio="none" result="h" />
+      <feImage id="lens-v" x="0" y="0" width="1" height="1" preserveAspectRatio="none" result="v" />
+      <feComposite in="h" in2="v" operator="arithmetic" k1="0" k2="1" k3="1" k4="0" result="map" />
+      <feDisplacementMap in="SourceGraphic" in2="map" scale="0.08" xChannelSelector="R" yChannelSelector="G" />
+    </filter>
+  </svg>
+  <div id="stage"></div>
+  <script type="module" src="./film.js"></script>
+</body>
+</html>

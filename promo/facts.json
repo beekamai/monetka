@@ -1,0 +1,25 @@
+{
+  "claims": [
+    { "on_screen": "без аккаунтов, без облака, без рекламы", "source": "README.md", "sentence": "The app makes no network requests, has no accounts, no analytics and no ads" },
+    { "on_screen": "Данные — только на телефоне", "source": "PRIVACY.md", "sentence": "Transactions, categories, plans and settings are stored only in the app's private storage on your device." },
+    { "on_screen": "350+120 = 470 ₽ (счёт в поле суммы)", "source": "README.md", "sentence": "the amount field does maths (`350+120`)" },
+    { "on_screen": "Категория подставится сама", "source": "README.md", "sentence": "the last category is pre-selected" },
+    { "on_screen": "План и факт, перерасход", "source": "README.md", "sentence": "planned / actual / difference for every category" },
+    { "on_screen": "Динамика за полгода, доля сохранённого дохода", "source": "README.md", "sentence": "income and expenses by month, the balance line and the share of income you keep" },
+    { "on_screen": "свайп — соседняя вкладка", "source": "README.md", "sentence": "swipe the screen to change tabs" },
+    { "on_screen": "Зажми — выбери несколько; Отменить", "source": "README.md + src/App.tsx", "sentence": "deleting a transaction or category, importing, restoring and resetting plans can be undone" },
+    { "on_screen": "Минимализм или стекло", "source": "README.md", "sentence": "*Minimal* or iPhone-style *Glass*, each light, dark or following the system" },
+    { "on_screen": "Импорт из Google Таблиц «Месячный бюджет»", "source": "README.md", "sentence": "download your *Monthly budget* sheet as `.xlsx` and pick the file" },
+    { "on_screen": "Резервная копия одной кнопкой", "source": "README.md", "sentence": "the whole database to a JSON file and back" },
+    { "on_screen": "Android · открытый исходный код", "source": "LICENSE + README.md", "sentence": "MIT License; offline personal budget app for Android" },
+    { "on_screen": "скачай .xlsx и выбери файл", "source": "README.md", "sentence": "download your *Monthly budget* sheet as `.xlsx` and pick the file" }
+  ],
+  "illustrative_not_claims": [
+    "Все суммы, категории, даты и операции в кадре — демо-данные из src/demo.ts, подпись «пример» на экране",
+    "31% дохода остаётся — посчитано из столбцов демо-графика, подпись «пример на демо-данных»"
+  ],
+  "not_claimed": [
+    "Цена (бесплатно) — не утверждается",
+    "Рейтинги, отзывы, число пользователей — отсутствуют"
+  ]
+}
