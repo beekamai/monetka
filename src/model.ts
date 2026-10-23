@@ -42,6 +42,8 @@ export interface State {
   style?: ThemeStyle;
   /** YYYY-MM-DD последней резервной копии — для напоминания */
   lastBackup?: string;
+  /** До этой даты напоминание о резервной копии не показывается */
+  backupSnooze?: string;
   /** Знакомство при первом запуске пройдено или пропущено */
   onboarded?: boolean;
 }
@@ -172,6 +174,7 @@ export function normalizeReport(raw: unknown): { state: State; dropped: number }
     style: raw.style === 'glass' ? 'glass' : 'minimal',
   };
   if (validDate(raw.lastBackup)) state.lastBackup = raw.lastBackup;
+  if (validDate(raw.backupSnooze)) state.backupSnooze = raw.backupSnooze;
   if (raw.onboarded === true) state.onboarded = true;
   return { state, dropped };
 }
@@ -198,6 +201,13 @@ export function shiftMonth(key: string, delta: number): string {
   const [y, m] = key.split('-').map(Number);
   const d = new Date(y, m - 1 + delta, 1);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+
+/** Дата YYYY-MM-DD, сдвинутая на n дней по местному календарю */
+export function shiftDay(date: string, n: number): string {
+  const [y, m, d] = date.split('-').map(Number);
+  const t = new Date(y, m - 1, d + n);
+  return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`;
 }
 
 export function todayISO(): string {

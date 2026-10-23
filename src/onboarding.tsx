@@ -268,7 +268,7 @@ function Gestures({ t }: { t: number }) {
         <div class="ob-screen" style={{ transform: `translateX(${-tabP * 8}%)`, opacity: 1 - Math.sin(Math.PI * tabP) * 0.5 }}>
           {[0, 1, 2].map((i) => (
             <div class={picked && i === 1 ? 'ob-line sel' : 'ob-line'}>
-              <i class={i === 1 && (picked || press > 0) ? 'check on' : 'dot'} style={i === 1 && press > 0 && !picked ? { background: `conic-gradient(var(--accent) ${press * 360}deg, transparent 0)` } : { background: ['#5B8DEF', '#27AE60', '#F2994A'][i] }} />
+              <i class={i === 1 && (picked || press > 0) ? 'selmark on' : 'dot'} style={i === 1 && press > 0 && !picked ? { background: `conic-gradient(var(--accent) ${press * 360}deg, transparent 0)` } : { background: ['#5B8DEF', '#27AE60', '#F2994A'][i] }} />
               <span /><b />
             </div>
           ))}

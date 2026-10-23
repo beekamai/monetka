@@ -1,6 +1,6 @@
 // Проверка: битые данные не роняют приложение и не теряют уцелевшие записи; ввод сумм; динамика по месяцам
 import assert from 'node:assert/strict';
-import { emptyState, normalizeState, parseExpr, parseSigned, uid, validDate } from '../src/model.ts';
+import { emptyState, normalizeState, parseExpr, parseSigned, shiftDay, uid, validDate } from '../src/model.ts';
 import { monthTrend, summarize } from '../src/calc.ts';
 import { pickSlot, serialize } from '../src/persist.ts';
 import { parseDate } from '../src/xlsxio.ts';
@@ -138,5 +138,13 @@ assert.equal(p.state!.txs.length, 2); assert.equal(p.dropped, 1); assert.deepEqu
 // Переезд с версии 1.0: голое состояние, обёрнутое загрузчиком
 p = pickSlot([`{"seq":2,"state":${JSON.stringify(st2)}}`, `{"seq":1,"state":${JSON.stringify(st1)}}`]);
 assert.equal(p.state!.txs.length, 2);
+
+// --- Откладывание напоминания о копии: дата переживает перезапуск, мусор отбрасывается ---
+assert.equal(shiftDay('2026-10-23', 14), '2026-11-06');
+assert.equal(shiftDay('2026-12-25', 14), '2027-01-08', 'через год');
+assert.equal(shiftDay('2028-02-20', 14), '2028-03-05', 'високосный февраль');
+assert.equal(normalizeState({ ...emptyState(), backupSnooze: '2026-11-06' })!.backupSnooze, '2026-11-06');
+assert.equal(normalizeState({ ...emptyState(), backupSnooze: '2026-02-31' })!.backupSnooze, undefined);
+assert.equal(normalizeState({ ...emptyState(), backupSnooze: 5 })!.backupSnooze, undefined);
 
 console.log('OK: модель, нормализация и динамика');

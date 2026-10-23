@@ -291,7 +291,7 @@ function setState(t) {
   each('.delrow .tx', (el) => {
     el.classList.toggle('sel', pressed || (t >= 16.7 && t < 17.1));
     const dot = el.firstElementChild;
-    dot.className = pressed ? 'check on' : 'dot';
+    dot.className = pressed ? 'selmark on' : 'dot';
     if (!pressed) dot.style.background = '#5B8DEF'; else dot.style.background = '';
   });
   const gone = e2(span(t, 15.5, 15.68)), back = bo(span(t, 16.58, 16.9));

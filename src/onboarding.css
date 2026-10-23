@@ -67,7 +67,7 @@
 .ob-line { height: 46px; display: flex; align-items: center; gap: 10px; padding: 0 8px; border-radius: 12px; }
 .ob-line span { flex: 1; height: 8px; border-radius: 4px; background: var(--track); }
 .ob-line b { width: 34px; height: 8px; border-radius: 4px; background: color-mix(in srgb, var(--neg) 45%, transparent); }
-.ob-line .dot, .ob-line .check { width: 16px; height: 16px; }
+.ob-line .dot, .ob-line .selmark { width: 16px; height: 16px; }
 .ob-line.sel { background: color-mix(in srgb, var(--accent) 14%, transparent); }
 .ob-tabs { position: absolute; bottom: 0; left: 0; right: 0; height: 46px; display: flex; justify-content: space-around; align-items: center; border-top: 1px solid var(--line); }
 .ob-tabs i { width: 18px; height: 18px; border-radius: 6px; background: var(--track); position: relative; z-index: 1; }

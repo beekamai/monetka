@@ -96,9 +96,9 @@ export function TrendChart({ points, current }: { points: TrendPoint[]; current:
   );
 }
 
-export function Progress({ value, max, over }: { value: number; max: number; over?: boolean }) {
+export function Progress({ value, max, over, goal }: { value: number; max: number; over?: boolean; goal?: boolean }) {
   const pct = max > 0 ? Math.min(100, (value / max) * 100) : value > 0 ? 100 : 0;
   return (
-    <div class="progress"><div class={over ? 'fill over' : 'fill'} style={{ width: `${pct}%` }} /></div>
+    <div class="progress"><div class={over ? 'fill over' : goal ? 'fill goal' : 'fill'} style={{ width: `${pct}%` }} /></div>
   );
 }

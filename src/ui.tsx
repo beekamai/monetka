@@ -98,6 +98,32 @@ export function SwipeArea({ onSwipe, class: cls, children }: { onSwipe: (dir: 1 
   return <div class={cls ? `swipe-area ${cls}` : 'swipe-area'} {...swipe}>{children}</div>;
 }
 
+/** Кнопки «+» и «−» для полей с выражениями: на цифровой клавиатуре Android знака плюс нет.
+ *  preventDefault на mousedown оставляет фокус в поле — клавиатура не закрывается. */
+export function CalcKeys({ input, minus = true }: { input: { current: HTMLInputElement | null }; minus?: boolean }) {
+  const put = (op: string) => {
+    const el = input.current;
+    if (!el) return;
+    const a = el.selectionStart ?? el.value.length, b = el.selectionEnd ?? a;
+    el.focus();
+    el.setSelectionRange(a, b);
+    // insertText — настоящий ввод: без него браузер не пришлёт change на blur, и правка плана не сохранится
+    if (!document.execCommand('insertText', false, op)) {
+      el.value = el.value.slice(0, a) + op + el.value.slice(b);
+      el.setSelectionRange(a + 1, a + 1);
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    haptic();
+  };
+  return (
+    <span class="calc-keys" data-noswipe>
+      {(minus ? ['+', '−'] : ['+']).map((op) => (
+        <button type="button" aria-label={op === '+' ? 'Плюс' : 'Минус'} onMouseDown={(e) => e.preventDefault()} onClick={() => put(op)}>{op}</button>
+      ))}
+    </span>
+  );
+}
+
 /** Соседний пункт списка вариантов по направлению свайпа; false — край, листать некуда */
 export function stepOption<T extends string>(options: readonly (readonly [T, string])[], value: T, dir: 1 | -1, set: (v: T) => void): boolean {
   const n = options[options.findIndex(([k]) => k === value) + dir];

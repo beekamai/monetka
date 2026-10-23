@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { App as CapApp } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
 import type { Category, Kind, State, ThemeMode, ThemeStyle, Tx } from './model.ts';
-import { PALETTE, monthKey, monthTitle, normalizeReport, parseExpr, parseSigned, rub, shiftMonth, signedRub, todayISO, uid } from './model.ts';
+import { PALETTE, monthKey, monthTitle, normalizeReport, parseExpr, parseSigned, rub, shiftDay, shiftMonth, signedRub, todayISO, uid } from './model.ts';
+import type { CatRow } from './calc.ts';
 import { monthTrend, planFor, summarize } from './calc.ts';
 import {
   beforeRestore, createSaver, dropBeforeRestore, dropBroken, exportBroken, hasBroken, load, pickFile, saveBeforeRestore, saveFile,
@@ -10,7 +11,7 @@ import {
 import { exportMonth, importWorkbook } from './xlsxio.ts';
 import { Onboarding } from './onboarding.tsx';
 import { DayBars, Donut, Progress, TrendChart } from './charts.tsx';
-import { GlassDefs, Money, Portal, Seg, Sheet, SwipeArea, haptic, popBack, stepOption, useBack, useSwipe } from './ui.tsx';
+import { CalcKeys, GlassDefs, Money, Portal, Seg, Sheet, SwipeArea, haptic, popBack, reducedMotion, stepOption, useBack, useSwipe } from './ui.tsx';
 
 type Tab = 'overview' | 'ops' | 'plan' | 'more';
 const TABS: readonly Tab[] = ['overview', 'ops', 'plan', 'more'];
@@ -28,6 +29,8 @@ export function App() {
   const [tab, setTab] = useState<Tab>('overview');
   const [dir, setDir] = useState<1 | -1>(1);
   const [monthDir, setMonthDir] = useState<1 | -1 | 0>(0);
+  /** Переход из напоминания: «Ещё» прокручивает к резервной копии и подсвечивает кнопку */
+  const spotBackup = useRef(false);
   const [editing, setEditing] = useState<Tx | 'new-expense' | 'new-income' | null>(null);
   const [toast, setToast] = useState<Toast | null>(null);
   const [notice, setNotice] = useState<string>();
@@ -104,6 +107,18 @@ export function App() {
     mq.addEventListener('change', apply);
     return () => mq.removeEventListener('change', apply);
   }, [mode, style]);
+  useEffect(() => {
+    if (style !== 'glass') return;
+    const root = document.documentElement;
+    let idle = 0;
+    const onScroll = () => {
+      if (!idle) root.dataset.scrolling = '';
+      clearTimeout(idle);
+      idle = window.setTimeout(() => { idle = 0; delete root.dataset.scrolling; }, 180);
+    };
+    addEventListener('scroll', onScroll, { passive: true });
+    return () => { removeEventListener('scroll', onScroll); clearTimeout(idle); delete root.dataset.scrolling; };
+  }, [style]);
   useEffect(() => {
     if (!toast) return;
     const t = setTimeout(() => setToast(null), toast.undo ? 5000 : 2800);
@@ -184,10 +199,13 @@ export function App() {
               <button class="link" onClick={() => setNotice(undefined)}>Понятно</button>
             </section>
           )}
-          {tab === 'overview' && <Overview s={s} m={m} month={month} onEdit={setEditing} onBackup={() => goTab('more')} />}
+          {tab === 'overview' && <Overview s={s} m={m} month={month} onEdit={setEditing}
+            onBackup={() => { spotBackup.current = true; goTab('more'); }}
+            onSnooze={() => { update((d) => { d.backupSnooze = shiftDay(todayISO(), 14); }); notify('Напомню через две недели'); }} />}
           {tab === 'ops' && <Ops s={s} m={m} onEdit={setEditing} update={update} />}
           {tab === 'plan' && <Plan s={s} m={m} month={month} update={update} notify={notify} />}
-          {tab === 'more' && <More s={s} m={m} month={month} readOnly={!persist.current} current={() => sRef.current!} update={update} replace={replace} notify={notify} />}
+          {tab === 'more' && <More s={s} m={m} month={month} readOnly={!persist.current} current={() => sRef.current!} update={update} replace={replace} notify={notify}
+            takeSpot={() => { const v = spotBackup.current; spotBackup.current = false; return v; }} />}
         </div>
       </main>
 
@@ -245,7 +263,9 @@ const DAY_KINDS = [['expense', 'Траты'], ['income', 'Доходы']] as con
 const OPS_FILTERS = [['all', 'Все'], ['expense', 'Расходы'], ['income', 'Доходы']] as const;
 const PLAN_KINDS = [['expense', 'Расходы'], ['income', 'Доходы']] as const;
 
-function Overview({ s, m, month, onEdit, onBackup }: { s: State; m: M; month: string; onEdit: (t: Tx) => void; onBackup: () => void }) {
+function Overview({ s, m, month, onEdit, onBackup, onSnooze }: {
+  s: State; m: M; month: string; onEdit: (t: Tx) => void; onBackup: () => void; onSnooze: () => void;
+}) {
   const [dayKind, setDayKind] = useState<Kind>('expense');
   const daySwipe = useSwipe((d) => stepOption(DAY_KINDS, dayKind, d, setDayKind), { short: true });
   const trend = useMemo(() => monthTrend(s, month, 6), [s, month]);
@@ -264,6 +284,7 @@ function Overview({ s, m, month, onEdit, onBackup }: { s: State; m: M; month: st
     <>
       {needsBackup(s) && (
         <section class="card notice soft">
+          <button class="notice-close" aria-label="Напомнить через две недели" onClick={onSnooze}>×</button>
           <span>{s.lastBackup ? `Последней резервной копии больше месяца (${fmtDate(s.lastBackup)}).` : 'Резервной копии ещё нет.'} Данные хранятся только на этом телефоне.</span>
           <button class="link" onClick={onBackup}>Сделать копию →</button>
         </section>
@@ -359,6 +380,9 @@ const fmtDate = (d: string) => new Date(d + 'T00:00').toLocaleDateString('ru-RU'
 /** Облачной копии Android нет — без ручной копии потеря телефона означает потерю базы */
 function needsBackup(s: State): boolean {
   if (s.txs.length < 20) return false;
+  // Дата дальше двух недель — след ушедших вперёд часов: такую отсрочку не учитываем
+  const today = todayISO();
+  if (s.backupSnooze && today < s.backupSnooze && s.backupSnooze <= shiftDay(today, 14)) return false;
   if (!s.lastBackup) return true;
   return (Date.now() - new Date(s.lastBackup + 'T00:00').getTime()) / 86400000 > 30;
 }
@@ -395,7 +419,7 @@ function TxRow({ s, t, i = 0, onClick, onLongPress, selected }: {
       aria-pressed={selected === undefined ? undefined : selected} {...long}>
       {selected === undefined
         ? <i class="dot" style={{ background: cat?.color ?? 'var(--muted)' }} />
-        : <i class={selected ? 'check on' : 'check'} aria-hidden="true" />}
+        : <i class={selected ? 'selmark on' : 'selmark'} aria-hidden="true" />}
       <span class="tx-main">
         <span class="tx-cat">{cat?.name ?? 'Без категории'}</span>
         {t.desc && <span class="tx-desc">{t.desc}</span>}
@@ -499,14 +523,19 @@ function SelectBack({ onBack }: { onBack: () => void }) {
 
 function Plan({ s, m, month, update, notify }: { s: State; m: M; month: string; update: Update; notify: Notify }) {
   const [kind, setKind] = useState<Kind>('expense');
-  const rows = kind === 'expense' ? m.expenseRows : m.incomeRows;
+  const [focus, setFocus] = useState<string | null>(null);
+  const focusRef = useRef<HTMLInputElement | null>(null);
+  const all = kind === 'expense' ? m.expenseRows : m.incomeRows;
+  // Копилка — перевод, а не трата: в итоги расходов не входит, перевыполнение её плана — плюс
+  const rows = all.filter((r) => !r.cat.savings);
+  const jars = all.filter((r) => r.cat.savings);
   const plan = rows.reduce((a, r) => a + r.plan, 0);
   const fact = rows.reduce((a, r) => a + r.fact, 0);
   const diff = kind === 'expense' ? plan - fact : fact - plan;
   // Порядок фиксируется при входе в раздел: иначе строка уезжает из-под пальца, пока правишь соседние планы
-  const order = useMemo(() => [...rows].sort((a, b) => (b.fact + b.plan) - (a.fact + a.plan)).map((r) => r.cat.id), [kind, month]);
+  const order = useMemo(() => [...all].sort((a, b) => (b.fact + b.plan) - (a.fact + a.plan)).map((r) => r.cat.id), [kind, month]);
   const rank = (id: string) => { const i = order.indexOf(id); return i < 0 ? order.length : i; };
-  const sorted = [...rows].sort((a, b) => rank(a.cat.id) - rank(b.cat.id));
+  const byRank = (a: CatRow, b: CatRow) => rank(a.cat.id) - rank(b.cat.id);
 
   const setPlan = (cat: Category, el: HTMLInputElement, current: number) => {
     const raw = el.value.trim();
@@ -515,6 +544,35 @@ function Plan({ s, m, month, update, notify }: { s: State; m: M; month: string; 
     el.value = v ? String(v) : '';
     if (v === current) return;
     update((d) => { const mm = (d.months[month] ??= {}); (mm.plans ??= {})[cat.id] = v; });
+  };
+
+  const planRow = (r: CatRow, jar: boolean) => {
+    const d = jar ? r.fact - r.plan : r.diff;
+    const tone = d > 0 ? 'pos' : d < 0 && kind === 'expense' && !jar ? 'neg' : 'muted';
+    const note = d === 0 ? '—' : jar && d < 0 ? `ещё ${rub(-d)}` : signedRub(d);
+    return (
+      <div class="plan-row" key={r.cat.id}>
+        <div class="plan-top">
+          <span class="plan-name"><i class="dot" style={{ background: r.cat.color }} />{r.cat.name}</span>
+          <span class={tone}>{note}</span>
+        </div>
+        <Progress value={r.fact} max={r.plan} over={!jar && kind === 'expense' && r.fact > r.plan} goal={jar} />
+        <div class="plan-bottom">
+          <span>{rub(r.fact)}</span>
+          <label class="plan-input">
+            {/* Кнопки слева от поля: появляясь, они не сдвигают поле из-под пальца */}
+            {focus === r.cat.id && <CalcKeys input={focusRef} />}
+            {jar ? 'цель' : 'план'}
+            <input key={`${month}:${r.plan}`} inputMode="decimal" enterKeyHint="done" defaultValue={r.plan ? String(r.plan) : ''} placeholder="0"
+              onFocus={(e) => { focusRef.current = e.currentTarget; setFocus(r.cat.id); }}
+              onBlur={() => setFocus(null)}
+              onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
+              onChange={(e) => setPlan(r.cat, e.currentTarget, r.plan)} />
+            ₽
+          </label>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -527,28 +585,15 @@ function Plan({ s, m, month, update, notify }: { s: State; m: M; month: string; 
       </section>
       <p class="hint">Нажми на сумму плана, чтобы изменить её только на {monthTitle(month).toLowerCase()}. Можно считать прямо в поле: 3000+1500.</p>
       <section class="card">
-        {sorted.map((r) => {
-          const over = kind === 'expense' && r.fact > r.plan;
-          return (
-            <div class="plan-row" key={r.cat.id}>
-              <div class="plan-top">
-                <span class="plan-name"><i class="dot" style={{ background: r.cat.color }} />{r.cat.name}{r.cat.savings && <em class="tag">копилка</em>}</span>
-                <span class={r.diff > 0 ? 'pos' : r.diff < 0 ? (kind === 'expense' ? 'neg' : 'muted') : 'muted'}>{r.diff === 0 ? '—' : signedRub(r.diff)}</span>
-              </div>
-              <Progress value={r.fact} max={r.plan} over={over} />
-              <div class="plan-bottom">
-                <span>{rub(r.fact)}</span>
-                <label class="plan-input">план
-                  <input key={`${month}:${r.plan}`} inputMode="decimal" enterKeyHint="done" defaultValue={r.plan ? String(r.plan) : ''} placeholder="0"
-                    onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
-                    onChange={(e) => setPlan(r.cat, e.currentTarget, r.plan)} />
-                  ₽
-                </label>
-              </div>
-            </div>
-          );
-        })}
+        {[...rows].sort(byRank).map((r) => planRow(r, false))}
       </section>
+      {jars.length > 0 && (
+        <section class="card">
+          <h2>Копилка</h2>
+          <p class="hint">Не трата: деньги остаются твоими, просто отложены. План — сколько отложить за месяц, больше — только лучше.</p>
+          {[...jars].sort(byRank).map((r) => planRow(r, true))}
+        </section>
+      )}
       {s.months[month]?.plans && (
         <button class="link" onClick={() => update((d) => { if (d.months[month]) delete d.months[month].plans; }, 'Планы месяца сброшены')}>
           Сбросить планы месяца к значениям по умолчанию
@@ -558,12 +603,24 @@ function Plan({ s, m, month, update, notify }: { s: State; m: M; month: string; 
   );
 }
 
-function More({ s, m, month, readOnly, current, update, replace, notify }: {
-  s: State; m: M; month: string; readOnly: boolean; current: () => State; update: Update; replace: Replace; notify: Notify;
+function More({ s, m, month, readOnly, current, update, replace, notify, takeSpot }: {
+  s: State; m: M; month: string; readOnly: boolean; current: () => State; update: Update; replace: Replace; notify: Notify; takeSpot: () => boolean;
 }) {
+  const backupRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (!takeSpot()) return;
+    // Ждём конца анимации входа вкладки, иначе прокрутка считает позицию по сдвинутой карточке
+    const go = setTimeout(() => {
+      backupRef.current?.scrollIntoView({ block: 'center', behavior: reducedMotion() ? 'auto' : 'smooth' });
+      backupRef.current?.classList.add('spot');
+    }, 320);
+    const off = setTimeout(() => backupRef.current?.classList.remove('spot'), 2900);
+    return () => { clearTimeout(go); clearTimeout(off); };
+  }, []);
   const [editCat, setEditCat] = useState<Category | 'new-expense' | 'new-income' | null>(null);
   const explicitStart = s.months[month]?.start;
   const [startRaw, setStartRaw] = useState(explicitStart?.toString() ?? '');
+  const startRef = useRef<HTMLInputElement>(null);
   const [broken, setBroken] = useState(false);
   const [exported, setExported] = useState(false);
   const [restorable, setRestorable] = useState(false);
@@ -636,11 +693,12 @@ function More({ s, m, month, readOnly, current, update, replace, notify }: {
       <section class="card">
         <h2>Начальная сумма — {monthTitle(month)}</h2>
         <div class="row-input">
-          <input inputMode="decimal" enterKeyHint="done" placeholder={`${Math.round(m.start)} (авто)`} value={startRaw}
+          <input ref={startRef} inputMode="decimal" enterKeyHint="done" placeholder={`${Math.round(m.start)} (авто)`} value={startRaw}
             onInput={(e) => setStartRaw(e.currentTarget.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
             onChange={(e) => commitStart(e.currentTarget.value)} />
           <span>₽</span>
+          <CalcKeys input={startRef} />
         </div>
         <p class="hint">Пусто — подставится остаток прошлого месяца. Минус тоже можно, если месяц начался с долга.</p>
       </section>
@@ -680,7 +738,7 @@ function More({ s, m, month, readOnly, current, update, replace, notify }: {
         <h2>Данные</h2>
         <button class="btn" onClick={doExport}>Экспорт месяца в Excel</button>
         {!readOnly && <button class="btn" onClick={doImport}>Импорт из таблицы (.xlsx)</button>}
-        <button class="btn ghost" onClick={doBackup}>Резервная копия</button>
+        <button ref={backupRef} class="btn ghost" onClick={doBackup}>Резервная копия</button>
         {!readOnly && <button class="btn ghost" onClick={doRestore}>Восстановить из копии</button>}
         {!readOnly && restorable && <button class="btn ghost" onClick={undoRestore}>Вернуть данные до восстановления</button>}
         {broken && <button class="btn danger" onClick={doBroken}>Выгрузить повреждённые данные</button>}
@@ -720,6 +778,12 @@ function lastCategory(s: State, kind: Kind): string {
   return best?.categoryId ?? '';
 }
 
+/** Высота поля по содержимому: field-sizing есть не во всех WebView, поэтому подгоняем вручную */
+function grow(el: HTMLTextAreaElement) {
+  el.style.height = 'auto';
+  el.style.height = `${el.scrollHeight + 2}px`;
+}
+
 function TxSheet({ s, month, value, onClose, onSave, onDelete }: {
   s: State; month: string; value: Tx | 'new-expense' | 'new-income';
   onClose: () => void; onSave: (t: Tx, mode: 'new' | 'edit' | 'repeat') => void; onDelete: (id: string) => void;
@@ -728,6 +792,7 @@ function TxSheet({ s, month, value, onClose, onSave, onDelete }: {
   const defDate = monthKey(todayISO()) === month ? todayISO() : `${month}-01`;
   const [kind, setKind] = useState<Kind>(isNew ? (value === 'new-income' ? 'income' : 'expense') : value.kind);
   const [amount, setAmount] = useState(isNew ? '' : String(value.amount));
+  const amountRef = useRef<HTMLInputElement>(null);
   const [date, setDate] = useState(isNew ? defDate : value.date);
   const [desc, setDesc] = useState(isNew ? '' : value.desc);
   const cats = s.categories.filter((c) => c.kind === kind);
@@ -756,9 +821,10 @@ function TxSheet({ s, month, value, onClose, onSave, onDelete }: {
     <Sheet title={isNew ? 'Новая операция' : 'Операция'} onClose={onClose}>
       <Seg value={kind} onChange={setKind} options={[['expense', 'Расход'], ['income', 'Доход']]} />
       <div class="amount-field">
-        <input autoFocus={isNew} inputMode="decimal" enterKeyHint="done" placeholder="0" value={amount} aria-label="Сумма"
+        <input ref={amountRef} autoFocus={isNew} inputMode="decimal" enterKeyHint="done" placeholder="0" value={amount} aria-label="Сумма"
           onInput={(e) => setAmount(e.currentTarget.value)} onKeyDown={(e) => { if (e.key === 'Enter') submit(); }} />
         <span>₽</span>
+        <CalcKeys input={amountRef} />
       </div>
       {isExpr && <div class={amt != null ? 'calc' : 'calc bad'}>{amt != null ? `= ${rub(amt)}` : 'не получается посчитать'}</div>}
       <div class="chips" data-noswipe>
@@ -775,7 +841,8 @@ function TxSheet({ s, month, value, onClose, onSave, onDelete }: {
         </div>
       )}
       <label class="field"><span>Описание</span>
-        <input placeholder="Например: продукты, такси" value={desc} maxLength={200} onInput={(e) => setDesc(e.currentTarget.value)} /></label>
+        <textarea rows={1} placeholder="Например: продукты, такси" value={desc} maxLength={1000}
+          onInput={(e) => { setDesc(e.currentTarget.value); grow(e.currentTarget); }} ref={(el) => { if (el) grow(el); }} /></label>
       <label class="field"><span>Дата</span>
         <input type="date" value={date} onInput={(e) => setDate(e.currentTarget.value)} /></label>
       {!isNew && (
@@ -825,11 +892,11 @@ function CatSheet({ s, month, value, onClose, onSave, onDelete }: {
       </div>
       {c.kind === 'expense' && (
         <label class="check"><input type="checkbox" checked={!!c.savings} onChange={(e) => setC({ ...c, savings: e.currentTarget.checked })} />
-          Копилка — деньги откладываются, а не тратятся</label>
+          <span>Копилка<small>Деньги откладываются, а не тратятся: в расходы не входят, план — цель накоплений</small></span></label>
       )}
       {c.kind === 'income' && (
         <label class="check"><input type="checkbox" checked={!!c.tips} onChange={(e) => setC({ ...c, tips: e.currentTarget.checked })} />
-          Чаевые — учитывать отдельно</label>
+          <span>Чаевые<small>Входят в доходы и отдельно копятся в «Отложено» вместе с копилкой</small></span></label>
       )}
       {!isNew && used ? (
         <div class="move">
