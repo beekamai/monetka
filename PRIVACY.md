@@ -18,8 +18,8 @@ Effective date / Дата вступления в силу: 2026-10-23
   are handed to the Android share sheet. Where they go next — a messenger, a cloud drive, an e-mail — is your
   choice and is governed by that service's policy.
 - **Files you open.** Spreadsheets and backups you import are read on the device and never uploaded.
-- **Permissions.** The app requests no runtime permissions. The `INTERNET` permission is declared by the
-  framework (Capacitor) and is not used by the app.
+- **Permissions.** The app requests no runtime permissions and does not declare `INTERNET`, so Android
+  itself blocks it from going online. The only declared permission is `VIBRATE`, for haptic feedback.
 - **Deleting data.** Uninstalling the app, or *Settings → Apps → Monetka → Storage → Clear data*, deletes
   everything the app stored.
 - **Children.** The app is not directed at children under 13.
@@ -41,8 +41,8 @@ Effective date / Дата вступления в силу: 2026-10-23
   кнопки и передаются в системное меню «Поделиться». Куда они попадут дальше — в мессенджер, облако, почту —
   решаете вы, и там действуют правила этого сервиса.
 - **Файлы, которые вы открываете.** Импортируемые таблицы и копии читаются на устройстве и никуда не загружаются.
-- **Разрешения.** Приложение не запрашивает разрешений во время работы. Разрешение `INTERNET` объявлено
-  фреймворком (Capacitor) и приложением не используется.
+- **Разрешения.** Приложение не запрашивает разрешений во время работы и не объявляет `INTERNET`, поэтому
+  выйти в сеть ему не даст сам Android. Единственное объявленное разрешение — `VIBRATE`, для отклика вибрацией.
 - **Удаление данных.** Удаление приложения или *Настройки → Приложения → Монетка → Хранилище → Очистить данные*
   стирает всё, что оно сохранило.
 - **Дети.** Приложение не предназначено для детей младше 13 лет.

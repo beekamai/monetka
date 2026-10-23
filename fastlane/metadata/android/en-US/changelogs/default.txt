@@ -1,5 +1,7 @@
-• Glass style and refreshed light and dark themes
+• Welcome tour on first launch
+• Long-press to select transactions: delete or move to another category
+• Glass style, light and dark themes
 • Daily income chart and a six-month trend
-• Swipe between tabs, months and sections; Back button support
-• Undo for deletes and imports, maths in the amount field, recent descriptions
-• Protection against a corrupted database and lost unsaved edits
+• Swipe between tabs, months and sections
+• Undo for deletes, maths in the amount field
+• Database corruption protection; the app has no internet access
