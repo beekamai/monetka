@@ -1,0 +1,5 @@
+• Glass style and refreshed light and dark themes
+• Daily income chart and a six-month trend
+• Swipe between tabs, months and sections; Back button support
+• Undo for deletes and imports, maths in the amount field, recent descriptions
+• Protection against a corrupted database and lost unsaved edits

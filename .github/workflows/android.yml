@@ -61,8 +61,10 @@ jobs:
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           chmod +x gradlew
-          ./gradlew assembleRelease --no-daemon
+          ./gradlew assembleRelease bundleRelease --no-daemon
           cp app/build/outputs/apk/release/app-release.apk ../Monetka-${{ github.run_number }}.apk
+          # AAB — для загрузки в Google Play, APK — для установки напрямую
+          cp app/build/outputs/bundle/release/app-release.aab ../Monetka-${{ github.run_number }}.aab
 
       - name: Remove signing key
         if: always()
@@ -70,15 +72,20 @@ jobs:
 
       - uses: actions/upload-artifact@v7
         with:
-          name: Monetka-apk
-          path: Monetka-*.apk
+          name: Monetka-${{ github.run_number }}
+          path: |
+            Monetka-*.apk
+            Monetka-*.aab
 
       - name: Release
         if: env.PUBLISH == 'true'
         uses: softprops/action-gh-release@v3
         with:
           tag_name: build-${{ github.run_number }}
-          name: Монетка 1.0.${{ github.run_number }}
+          name: Монетка 1.1.${{ github.run_number }}
+          body_path: fastlane/metadata/android/ru-RU/changelogs/default.txt
           generate_release_notes: true
           make_latest: true
-          files: Monetka-*.apk
+          files: |
+            Monetka-*.apk
+            Monetka-*.aab

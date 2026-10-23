@@ -20,11 +20,20 @@ and tips, the end-of-month balance and how much your savings grew. On top of the
 search, Excel export and import of your existing sheets.
 
 > 🔒 Your data never leaves the phone. The app makes no network requests, has no accounts, no analytics and
-> no ads. Backups are files you save and share yourself.
+> no ads, and Android cloud backup is off. Backups are files you save and share yourself.
+> [Privacy policy](PRIVACY.md).
+
+<p align="center">
+  <img src="fastlane/metadata/android/ru-RU/images/phoneScreenshots/1_overview.png" width="200" alt="Overview" />
+  <img src="fastlane/metadata/android/ru-RU/images/phoneScreenshots/2_trend_glass.png" width="200" alt="Six-month trend, glass style" />
+  <img src="fastlane/metadata/android/ru-RU/images/phoneScreenshots/5_new_expense.png" width="200" alt="New expense" />
+  <img src="fastlane/metadata/android/ru-RU/images/phoneScreenshots/6_themes.png" width="200" alt="Themes" />
+</p>
 
 ### Features
 
-- 📊 **Overview** — balance, starting amount, savings growth, income / expenses / set aside, a pie chart by category and spending by day.
+- 📊 **Overview** — balance, starting amount, savings growth, income / expenses / set aside, a pie chart by category, spending or income by day.
+- 📈 **Six-month trend** — income and expenses by month, the balance line and the share of income you keep.
 - 🧾 **Transactions** — grouped by day, with filter, search, edit and delete.
 - 🎯 **Plan** — planned / actual / difference for every category; plans can be overridden for a single month.
 - 🐷 **Savings jar and tips** — money moved to the jar counts as set aside, not spent; tips are tracked separately, as in the sheet.
@@ -32,7 +41,11 @@ search, Excel export and import of your existing sheets.
 - 📥 **Import from Google Sheets** — download your *Monthly budget* sheet as `.xlsx` and pick the file: transactions, the starting amount and plans are imported. Importing the same file again adds no duplicates.
 - 📤 **Export** — any month to an `.xlsx` with the same *Summary* and *Transactions* sheets.
 - 💾 **Backup** — the whole database to a JSON file and back.
-- 🌗 **Themes** — light, dark or follow the system.
+- ⚡ **Fast entry** — the last category is pre-selected, recent descriptions fill in with a tap, the amount field does maths (`350+120`), *Repeat today* copies a transaction.
+- ↩️ **Undo** — deleting a transaction or category, importing, restoring and resetting plans can be undone.
+- 👆 **Gestures** — swipe the screen to change tabs, the month bar to change months, a switch to change sections; swipe a sheet down to close it; the Android Back button closes sheets first.
+- 🛡️ **Safe storage** — the database is written to two files in turn, so an interrupted write never takes the previous version with it; damaged records are skipped one by one and kept for export; a failed write is reported; edits are flushed when the app goes to the background; restoring a backup keeps a snapshot you can roll back to.
+- 🎨 **Themes** — *Minimal* or iPhone-style *Glass*, each light, dark or following the system. Animations respect the system *Remove animations* setting.
 
 ### Install
 
@@ -65,9 +78,12 @@ but it will not install over an APK from the Releases page.
 ### CI and signing
 
 [`android.yml`](.github/workflows/android.yml) runs on every push and pull request: tests, web build,
-`cap sync`, Gradle. The APK is uploaded as a workflow artifact. A push to `main` also publishes a release
-signed with the key from repository secrets; the build fails instead of publishing an APK signed with any
-other key.
+`cap sync`, Gradle. The APK and the AAB are uploaded as workflow artifacts. A push to `main` also publishes a
+release with both, signed with the key from repository secrets; the build fails instead of publishing a build
+signed with any other key. Google Play takes the `.aab` — see [docs/PLAY_STORE.md](docs/PLAY_STORE.md).
+
+`npm run dev` and open `/?demo` for half a year of sample data that is never saved; `&tab=`, `&style=glass`,
+`&theme=dark` pick the screen. Store screenshots are made this way.
 
 To publish signed builds from a fork, create your own key and add four secrets
 (**Settings → Secrets and variables → Actions**):
@@ -92,14 +108,19 @@ release can only be installed after uninstalling the app.
 ```
 src/
   App.tsx         screens and tabs
-  model.ts        data model, default categories, formatting
-  calc.ts         monthly summary: plan / actual, balance chain, savings, tips
+  ui.tsx          gestures, Back button stack, segmented switch, sheet, animated amounts
+  model.ts        data model, validation of stored data, amount parsing
+  calc.ts         monthly summary and six-month trend
   xlsxio.ts       .xlsx import and export (SheetJS)
-  storage.ts      persistence (Capacitor Preferences) and backup files
-  charts.tsx      pie and bar charts
-tests/            calc.test.ts — import, totals, export round trip
+  storage.ts      persistence with last-good fallback, backup files
+  charts.tsx      donut, daily bars, trend chart
+  demo.ts         sample data for ?demo
+tests/            import and totals; damaged data, amount parsing, trend
 android/          Capacitor Android project
-.github/workflows android.yml — tests, APK build, release
+fastlane/         Google Play listing: texts, icon, banner, screenshots
+store/            sources of the icon and the banner
+docs/             PLAY_STORE.md — publishing checklist
+.github/workflows android.yml — tests, APK and AAB build, release
 ```
 </details>
 
@@ -116,12 +137,21 @@ MIT.
 остаток на конец месяца и рост сбережений. Сверх таблицы — графики, поиск, экспорт в Excel и импорт ваших
 таблиц.
 
-> 🔒 Данные не покидают телефон. Приложение не ходит в сеть, в нём нет аккаунтов, аналитики и рекламы.
-> Резервные копии — это файлы, которые вы сохраняете и пересылаете сами.
+> 🔒 Данные не покидают телефон. Приложение не ходит в сеть, в нём нет аккаунтов, аналитики и рекламы,
+> облачная копия Android отключена. Резервные копии — это файлы, которые вы сохраняете и пересылаете сами.
+> [Политика конфиденциальности](PRIVACY.md).
+
+<p align="center">
+  <img src="fastlane/metadata/android/ru-RU/images/phoneScreenshots/1_overview.png" width="200" alt="Обзор" />
+  <img src="fastlane/metadata/android/ru-RU/images/phoneScreenshots/2_trend_glass.png" width="200" alt="Динамика за полгода, стиль «Стекло»" />
+  <img src="fastlane/metadata/android/ru-RU/images/phoneScreenshots/5_new_expense.png" width="200" alt="Новый расход" />
+  <img src="fastlane/metadata/android/ru-RU/images/phoneScreenshots/6_themes.png" width="200" alt="Темы" />
+</p>
 
 ### Возможности
 
-- 📊 **Обзор** — остаток, начальная сумма, рост сбережений, доходы / расходы / отложено, круговая диаграмма по категориям и траты по дням.
+- 📊 **Обзор** — остаток, начальная сумма, рост сбережений, доходы / расходы / отложено, круговая диаграмма по категориям, траты или доходы по дням.
+- 📈 **Динамика за полгода** — доходы и расходы по месяцам, линия остатка и доля дохода, которую удаётся сохранить.
 - 🧾 **Операции** — по дням, с фильтром, поиском, правкой и удалением.
 - 🎯 **План** — план / факт / разница по каждой категории; план можно поменять для отдельного месяца.
 - 🐷 **Копилка и чаевые** — деньги в копилке считаются отложенными, а не потраченными; чаевые учитываются отдельно, как в таблице.
@@ -129,7 +159,11 @@ MIT.
 - 📥 **Импорт из Google Таблиц** — скачайте таблицу «Месячный бюджет» как `.xlsx` и выберите файл: подтянутся операции, начальная сумма и планы. Повторный импорт того же файла не дублирует операции.
 - 📤 **Экспорт** — любой месяц в `.xlsx` с теми же листами «Сводка» и «Транзакции».
 - 💾 **Резервная копия** — вся база в JSON-файл и обратно.
-- 🌗 **Темы** — светлая, тёмная или как в системе.
+- ⚡ **Быстрый ввод** — последняя категория выбрана заранее, недавние описания подставляются тапом, в поле суммы можно считать (`350+120`), «Повторить сегодня» копирует операцию.
+- ↩️ **Отмена** — удаление операции или категории, импорт, восстановление и сброс планов можно отменить.
+- 👆 **Жесты** — свайп по экрану листает вкладки, по шапке — месяцы, по переключателю — разделы; шторка смахивается вниз; кнопка «Назад» сначала закрывает шторки.
+- 🛡️ **Надёжное хранение** — база пишется по очереди в два файла, и оборванная запись не уносит предыдущую версию; повреждённые записи пропускаются поштучно и сохраняются для выгрузки; о неудачной записи приложение говорит; правки сохраняются при сворачивании; перед восстановлением из копии остаётся снимок для отката.
+- 🎨 **Темы** — «Минимализм» или «Стекло» в стиле iPhone, каждая светлая, тёмная или как в системе. Анимации отключаются системной настройкой «Убрать анимацию».
 
 ### Установка
 
@@ -162,8 +196,12 @@ APK со страницы Releases она не встанет.
 ### CI и подпись
 
 [`android.yml`](.github/workflows/android.yml) запускается на каждый push и pull request: тесты, сборка
-веба, `cap sync`, Gradle. APK кладётся в артефакты прогона. Push в `main` вдобавок публикует релиз,
-подписанный ключом из секретов репозитория; без ключа сборка падает, а не выпускает APK с чужой подписью.
+веба, `cap sync`, Gradle. APK и AAB кладутся в артефакты прогона. Push в `main` вдобавок публикует релиз с обоими,
+подписанный ключом из секретов репозитория; без ключа сборка падает, а не выпускает сборку с чужой подписью.
+В Google Play загружается `.aab` — см. [docs/PLAY_STORE.md](docs/PLAY_STORE.md).
+
+`npm run dev` и адрес `/?demo` — полгода демо-данных, которые никуда не сохраняются; `&tab=`, `&style=glass`,
+`&theme=dark` выбирают экран. Так снимаются скриншоты для стора.
 
 Чтобы публиковать подписанные сборки из форка, создайте свой ключ и добавьте четыре секрета
 (**Settings → Secrets and variables → Actions**):
@@ -188,14 +226,19 @@ keytool -genkeypair -v -keystore monetka.keystore -alias monetka -keyalg RSA -ke
 ```
 src/
   App.tsx         экраны и вкладки
-  model.ts        модель данных, категории по умолчанию, форматирование
-  calc.ts         сводка месяца: план / факт, цепочка остатков, копилка, чаевые
+  ui.tsx          жесты, стек кнопки «Назад», переключатель, шторка, анимированные суммы
+  model.ts        модель данных, проверка сохранённых данных, разбор сумм
+  calc.ts         сводка месяца и динамика за полгода
   xlsxio.ts       импорт и экспорт .xlsx (SheetJS)
-  storage.ts      хранение (Capacitor Preferences) и файлы резервных копий
-  charts.tsx      круговая и столбчатая диаграммы
-tests/            calc.test.ts — импорт, итоги, экспорт туда-обратно
+  storage.ts      хранение с запасной копией, файлы резервных копий
+  charts.tsx      кольцевая диаграмма, столбцы по дням, динамика
+  demo.ts         демо-данные для ?demo
+tests/            импорт и итоги; испорченные данные, разбор сумм, динамика
 android/          Android-проект Capacitor
-.github/workflows android.yml — тесты, сборка APK, релиз
+fastlane/         карточка Google Play: тексты, иконка, баннер, скриншоты
+store/            исходники иконки и баннера
+docs/             PLAY_STORE.md — чек-лист публикации
+.github/workflows android.yml — тесты, сборка APK и AAB, релиз
 ```
 </details>
 

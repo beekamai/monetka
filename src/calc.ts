@@ -29,7 +29,7 @@ export interface MonthSummary {
   end: number;
   /** Насколько изменились общие сбережения за месяц */
   delta: number;
-  /** delta / start, null если начальная сумма 0 */
+  /** delta / |start|, null если начальная сумма 0 */
   deltaPct: number | null;
   expenseRows: CatRow[];
   incomeRows: CatRow[];
@@ -119,7 +119,32 @@ export function summarize(s: State, key: string): MonthSummary {
     income, incomePlan: sum(incomeRows, (r) => r.plan), incomeNoTips: income - tips, tips,
     expenseTotal, expensePlanTotal, spent: expenseTotal - saved, spentPlan, saved,
     stash: saved + tips, end, delta,
-    deltaPct: st.value !== 0 ? delta / st.value : null,
+    deltaPct: st.value !== 0 ? delta / Math.abs(st.value) : null,
     expenseRows, incomeRows, byDay, txs,
   };
+}
+
+export interface TrendPoint { key: string; income: number; spent: number; saved: number; end: number }
+
+/** Последние n месяцев до key включительно: один проход по операциям, цепочка остатков как в startOf */
+export function monthTrend(s: State, key: string, n: number): TrendPoint[] {
+  const keys = Array.from({ length: n }, (_, i) => shiftMonth(key, i - n + 1));
+  const savingsIds = new Set(s.categories.filter((c) => c.savings).map((c) => c.id));
+  const agg = new Map(keys.map((k) => [k, { income: 0, spent: 0, saved: 0 }]));
+  for (const t of s.txs) {
+    const a = agg.get(monthKey(t.date));
+    if (!a) continue;
+    if (t.kind === 'income') a.income += t.amount;
+    else if (savingsIds.has(t.categoryId)) a.saved += t.amount;
+    else a.spent += t.amount;
+  }
+  let start = startOf(s, keys[0]).value;
+  return keys.map((k) => {
+    const a = agg.get(k)!;
+    const ex = s.months[k]?.start;
+    if (ex !== undefined) start = ex;
+    const end = start + a.income - a.spent - a.saved;
+    start = end;
+    return { key: k, ...a, end };
+  });
 }

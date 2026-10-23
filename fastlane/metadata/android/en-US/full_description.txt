@@ -1,0 +1,31 @@
+Monetka is a simple monthly money tracker modelled on the "Monthly budget" spreadsheet, only quicker and in your pocket. The interface is in Russian.
+
+🔒 YOUR MONEY, YOUR BUSINESS
+No accounts, no cloud, no ads, no analytics. The app never goes online: everything stays on your phone. Backups are one tap away and stay in your hands.
+
+📊 EVERYTHING ON THE FIRST SCREEN
+• Balance at month end and how much your savings grew
+• Where the money went — a donut chart by category
+• Spending and income by day
+• Six-month trend and the share of income you keep
+
+🎯 PLAN VS ACTUAL
+• A plan for every category, overridable for any month
+• Overspending is obvious at a glance
+• A savings jar counts as money set aside, not spent; tips are tracked separately
+
+⚡ FAST ENTRY
+• The category is pre-selected, recent descriptions are one tap away
+• Do the maths right in the amount field: 350+120
+• "Repeat today" for regular expenses
+• Deleted by mistake? Undo
+
+📥 MOVE FROM GOOGLE SHEETS
+Download your "Monthly budget" sheet as .xlsx and open it in the app: transactions, the starting balance and plans come along. Importing again creates no duplicates. Any month exports back to Excel.
+
+✨ NICE TO USE
+• Two styles, minimal and glass, in light and dark
+• Swipe between tabs, months and sections
+• Smooth animations that respect the system "Remove animations" setting
+
+Open source: github.com/beekamai/monetka

@@ -1,6 +1,6 @@
 import * as XLSX from 'xlsx';
 import type { Category, Kind, State, Tx } from './model.ts';
-import { PALETTE, monthKey, monthTitle, uid } from './model.ts';
+import { PALETTE, monthKey, monthTitle, uid, validDate } from './model.ts';
 import { summarize } from './calc.ts';
 
 type Cell = string | number | boolean | Date | null | undefined;
@@ -21,6 +21,11 @@ export function parseAmount(v: Cell): number | null {
 const pad = (n: number) => String(n).padStart(2, '0');
 
 export function parseDate(v: Cell): string | null {
+  const d = dateOf(v);
+  return validDate(d) ? d : null;
+}
+
+function dateOf(v: Cell): string | null {
   if (v instanceof Date && !isNaN(+v)) return `${v.getFullYear()}-${pad(v.getMonth() + 1)}-${pad(v.getDate())}`;
   if (typeof v === 'number' && v > 20000 && v < 80000) {
     const d = XLSX.SSF.parse_date_code(v);
