@@ -379,3 +379,5 @@ body.selecting .fabs { display: none; }
 /* Анимированная opacity у предка делает его корнем подложки — backdrop-filter внутри перестаёт видеть фон. Поэтому анимируются сами элементы, а не обёртки. */
 .fab { animation: rise .3s both; }
 .content > .swipe-area { animation: none; }
+.card.locale { display: flex; flex-direction: column; gap: 10px; }
+.card.locale h2 { margin-bottom: 2px; }

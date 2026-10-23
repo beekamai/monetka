@@ -1,4 +1,4 @@
-Monetka is a simple monthly money tracker modelled on the "Monthly budget" spreadsheet, only quicker and in your pocket. The interface is in Russian.
+Monetka is a simple monthly money tracker modeled on the "Monthly budget" spreadsheet, only quicker and in your pocket.
 
 🔒 YOUR MONEY, YOUR BUSINESS
 No accounts, no cloud, no ads, no analytics. The app never goes online: everything stays on your phone. Backups are one tap away and stay in your hands.
@@ -15,13 +15,16 @@ No accounts, no cloud, no ads, no analytics. The app never goes online: everythi
 • A savings jar counts as money set aside, not spent; tips are tracked separately
 
 ⚡ FAST ENTRY
-• The category is pre-selected, recent descriptions are one tap away
-• Do the maths right in the amount field: 350+120
+• The category is pre-selected, recent notes are one tap away
+• Do the math right in the amount field: 350+120
 • "Repeat today" for regular expenses
 • Deleted by mistake? Undo
 
 📥 MOVE FROM GOOGLE SHEETS
-Download your "Monthly budget" sheet as .xlsx and open it in the app: transactions, the starting balance and plans come along. Importing again creates no duplicates. Any month exports back to Excel.
+Kept your budget in the Russian-language Google Sheets template "Месячный бюджет"? Download it as .xlsx and open it in the app: transactions, the starting balance and plans come along. Importing again creates no duplicates. Any month exports back to Excel.
+
+🌍 YOUR LANGUAGE AND CURRENCY
+English, Ukrainian or Russian; dollar, euro, hryvnia or ruble. Defaults follow your phone, change them any time.
 
 ✨ NICE TO USE
 • Two styles, minimal and glass, in light and dark

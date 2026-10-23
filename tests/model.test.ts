@@ -1,6 +1,6 @@
 // Проверка: битые данные не роняют приложение и не теряют уцелевшие записи; ввод сумм; динамика по месяцам
 import assert from 'node:assert/strict';
-import { emptyState, normalizeState, parseExpr, parseSigned, shiftDay, uid, validDate } from '../src/model.ts';
+import { emptyState, keepLocale, normalizeState, parseExpr, parseSigned, relocalize, shiftDay, translateStock, uid, validDate, withLocale } from '../src/model.ts';
 import { monthTrend, summarize } from '../src/calc.ts';
 import { pickSlot, serialize } from '../src/persist.ts';
 import { parseDate } from '../src/xlsxio.ts';
@@ -146,5 +146,49 @@ assert.equal(shiftDay('2028-02-20', 14), '2028-03-05', 'високосный ф�
 assert.equal(normalizeState({ ...emptyState(), backupSnooze: '2026-11-06' })!.backupSnooze, '2026-11-06');
 assert.equal(normalizeState({ ...emptyState(), backupSnooze: '2026-02-31' })!.backupSnooze, undefined);
 assert.equal(normalizeState({ ...emptyState(), backupSnooze: 5 })!.backupSnooze, undefined);
+
+// --- Перевод категорий при смене языка: только нетронутый шаблон без операций ---
+const fresh = emptyState('ru');
+relocalize(fresh, 'uk');
+assert.equal(fresh.categories[0].name, 'Харчування');
+assert.equal(fresh.categories.find((c) => c.savings)?.name, 'У скарбничку', 'флаг копилки на месте');
+assert.equal(fresh.categories.find((c) => c.tips)?.name, 'Чайові');
+const tuned = emptyState('ru');
+tuned.categories[0].plan = 22000;
+relocalize(tuned, 'en');
+assert.equal(tuned.categories[0].name, 'Питание', 'план уже задан — категории не трогаем');
+const renamed = emptyState('en');
+renamed.categories[1].name = 'Presents';
+relocalize(renamed, 'ru');
+assert.equal(renamed.categories[1].name, 'Presents', 'переименованные категории не трогаем');
+const used = emptyState('ru');
+used.txs.push({ id: 'x', kind: 'expense', date: '2026-10-01', amount: 1, desc: '', categoryId: used.categories[0].id });
+relocalize(used, 'en');
+assert.equal(used.categories[0].name, 'Питание', 'есть операции — категории не трогаем');
+
+// --- Обновление с версии 1.1: любая сохранённая база без языка остаётся русской и в рублях, данные не трогаются ---
+const v11 = emptyState('ru');
+v11.months['2026-10'] = { start: 5000 };
+const up = withLocale(v11, false);
+assert.equal(up.lang, 'ru'); assert.equal(up.currency, 'RUB');
+assert.equal(up.categories, v11.categories, 'категории те же самые');
+assert.deepEqual(up.months, v11.months);
+const emptyOld = withLocale(emptyState('ru'), false);
+assert.equal(emptyOld.categories[0].name, 'Питание', 'пустая, но сохранённая база — тоже старая');
+// Первый запуск: настройки телефона и категории на его языке
+const first = withLocale(emptyState('ru'), true);
+assert.ok(first.lang && first.currency);
+// Копия 1.x без языка не переключает интерфейс
+const restoredOld = keepLocale(emptyState('ru'), { ...emptyState('uk'), lang: 'uk', currency: 'UAH' });
+assert.equal(restoredOld.lang, 'uk'); assert.equal(restoredOld.currency, 'UAH');
+// Перевод шаблона сохраняет id, цвета и флаги
+const painted = emptyState('ru');
+painted.categories[3].color = '#000000';
+const trans = translateStock(painted.categories, 'en');
+assert.equal(trans[3].color, '#000000'); assert.equal(trans[3].id, painted.categories[3].id);
+assert.equal(trans.find((c) => c.savings)?.id, painted.categories.find((c) => c.savings)?.id);
+// Починка базы на старте — на языке самой базы
+const ukBroken = normalizeState({ ...emptyState('uk'), lang: 'uk', categories: [], txs: [] })!;
+assert.equal(ukBroken.categories[0].name, 'Харчування');
 
 console.log('OK: модель, нормализация и динамика');

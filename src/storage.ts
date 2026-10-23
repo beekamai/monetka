@@ -9,6 +9,28 @@ import { Preferences } from '@capacitor/preferences';
 import type { State } from './model.ts';
 import { emptyState, normalizeReport } from './model.ts';
 import { pickSlot, serialize } from './persist.ts';
+import { dict } from './i18n.ts';
+
+const t = dict({
+  ru: {
+    readOnly: 'Не удалось прочитать или подстраховать базу — изменения сейчас не сохраняются, чтобы ничего не затереть. Освободи место на телефоне и перезапусти приложение.',
+    damaged: 'База была повреждена и не читается. Исходные данные сохранены: «Ещё → Данные → Выгрузить повреждённые данные».',
+    dropped: 'Пропущено повреждённых записей: {n}, остальное на месте. Исходник сохранён: «Ещё → Данные → Выгрузить повреждённые данные».',
+    shareTitle: 'Сохранить или отправить',
+  },
+  uk: {
+    readOnly: 'Не вдалося прочитати або підстрахувати базу — зміни зараз не зберігаються, щоб нічого не перезаписати. Звільни місце на телефоні й перезапусти застосунок.',
+    damaged: 'База була пошкоджена й не читається. Вихідні дані збережено: «Ще → Дані → Вивантажити пошкоджені дані».',
+    dropped: 'Пропущено пошкоджених записів: {n}, решта на місці. Вихідні дані збережено: «Ще → Дані → Вивантажити пошкоджені дані».',
+    shareTitle: 'Зберегти або надіслати',
+  },
+  en: {
+    readOnly: "Couldn't read or back up the database, so changes aren't being saved right now to avoid overwriting anything. Free up some space on your phone and restart the app.",
+    damaged: 'The database was damaged and cannot be read. The original data is kept: "More → Data → Export damaged data".',
+    dropped: 'Skipped damaged records: {n}, everything else is intact. The original is kept: "More → Data → Export damaged data".',
+    shareTitle: 'Save or share',
+  },
+});
 
 const DIR = 'monetka';
 const SLOTS = [`${DIR}/state-a.json`, `${DIR}/state-b.json`];
@@ -20,9 +42,12 @@ const fs = { directory: Directory.Data, encoding: Encoding.UTF8 } as const;
 export interface Loaded {
   state: State;
   seq: number;
-  notice?: string;
+  /** Текст собирается при показе: язык базы становится известен только после загрузки */
+  notice?: () => string;
   /** false — хранилище не читается, и запись поверх могла бы уничтожить данные */
   persist: boolean;
+  /** true — сохранённой базы нет совсем: первый запуск */
+  fresh?: boolean;
 }
 
 const missing = (e: unknown) => /not exist|does not exist|no such|not found|ENOENT/i.test(String((e as Error)?.message ?? e));
@@ -50,8 +75,6 @@ async function keepBroken(raws: string[]): Promise<boolean> {
   return ok;
 }
 
-const READ_ONLY = 'Не удалось прочитать или подстраховать базу — изменения сейчас не сохраняются, чтобы ничего не затереть. Освободи место на телефоне и перезапусти приложение.';
-
 export async function load(): Promise<Loaded> {
   const settled = await Promise.allSettled(SLOTS.map(read));
   const unreadable = settled.some((r) => r.status === 'rejected');
@@ -62,7 +85,7 @@ export async function load(): Promise<Loaded> {
     try {
       old = await Promise.all(LEGACY.map(async (key) => (await Preferences.get({ key })).value));
     } catch {
-      return { state: emptyState(), seq: 0, persist: false, notice: READ_ONLY };
+      return { state: emptyState(), seq: 0, persist: false, notice: () => t('readOnly') };
     }
     if (old.some((r) => r != null)) {
       // Старый формат — голое состояние без seq: заворачиваем, основной ключ приоритетнее снимка
@@ -75,15 +98,16 @@ export async function load(): Promise<Loaded> {
   const kept = p.damaged.length ? await keepBroken(p.damaged) : true;
   const persist = !unreadable && kept;
   if (!p.state) {
-    if (!p.damaged.length && persist) return { state: emptyState(), seq: 0, persist };
+    if (!p.damaged.length && persist) return { state: emptyState(), seq: 0, persist, fresh: true };
     return {
       state: emptyState(), seq: p.seq, persist,
-      notice: persist ? 'База была повреждена и не читается. Исходные данные сохранены: «Ещё → Данные → Выгрузить повреждённые данные».' : READ_ONLY,
+      notice: persist ? () => t('damaged') : () => t('readOnly'),
     };
   }
-  let notice: string | undefined;
-  if (!persist) notice = READ_ONLY;
-  else if (p.dropped) notice = `Пропущено повреждённых записей: ${p.dropped}, остальное на месте. Исходник сохранён: «Ещё → Данные → Выгрузить повреждённые данные».`;
+  let notice: (() => string) | undefined;
+  const dropped = p.dropped;
+  if (!persist) notice = () => t('readOnly');
+  else if (dropped) notice = () => t('dropped', { n: dropped });
   return { state: p.state, seq: p.seq, persist, notice };
 }
 
@@ -184,7 +208,7 @@ export async function saveFile(name: string, data: Uint8Array | string, mime: st
     const bytes = typeof data === 'string' ? new TextEncoder().encode(data) : data;
     const res = await Filesystem.writeFile({ path: name, data: toBase64(bytes), directory: Directory.Cache });
     try {
-      await Share.share({ title: name, url: res.uri, dialogTitle: 'Сохранить или отправить' });
+      await Share.share({ title: name, url: res.uri, dialogTitle: t('shareTitle') });
       return true;
     } catch (e) {
       if (/cancel/i.test(String((e as Error)?.message ?? e))) return false;

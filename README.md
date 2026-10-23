@@ -38,13 +38,14 @@ search, Excel export and import of your existing sheets.
 - 🎯 **Plan** — planned / actual / difference for every category; plans can be overridden for a single month.
 - 🐷 **Savings jar and tips** — money moved to the jar counts as set aside, not spent; tips are tracked separately, as in the sheet.
 - 🔁 **Rolling balance** — the end balance of a month becomes the next month's starting amount, unless you set one by hand.
-- 📥 **Import from Google Sheets** — download your *Monthly budget* sheet as `.xlsx` and pick the file: transactions, the starting amount and plans are imported. Importing the same file again adds no duplicates.
+- 📥 **Import from Google Sheets** — for the Russian-language template «Месячный бюджет»: download it as `.xlsx` and pick the file: transactions, the starting amount and plans are imported. Importing the same file again adds no duplicates.
 - 📤 **Export** — any month to an `.xlsx` with the same *Summary* and *Transactions* sheets.
 - 💾 **Backup** — the whole database to a JSON file and back.
 - ⚡ **Fast entry** — the last category is pre-selected, recent descriptions fill in with a tap, the amount field does maths (`350+120`), *Repeat today* copies a transaction.
 - ↩️ **Undo** — deleting a transaction or category, importing, restoring and resetting plans can be undone.
 - 👆 **Gestures** — swipe the screen to change tabs, the month bar to change months, a switch to change sections; swipe a sheet down to close it; the Android Back button closes sheets first.
 - 🛡️ **Safe storage** — the database is written to two files in turn, so an interrupted write never takes the previous version with it; damaged records are skipped one by one and kept for export; a failed write is reported; edits are flushed when the app goes to the background; restoring a backup keeps a snapshot you can roll back to.
+- 🌍 **Languages and currencies** — English, Ukrainian or Russian; dollar, euro, hryvnia or ruble. Picked from the phone's language and region on first launch, changeable any time (amounts are not converted).
 - 🎨 **Themes** — *Minimal* or iPhone-style *Glass*, each light, dark or following the system. Animations respect the system *Remove animations* setting.
 
 ### Install
@@ -61,7 +62,7 @@ Every release is signed with the same key, so a new version installs over the ol
 | Overview | Balance, starting amount, savings growth, income / expenses / set aside, pie chart, spending by day |
 | Transactions | List by day, filter, search, edit and delete |
 | Plan | Planned / actual / difference per category, per-month plan overrides |
-| More | Starting amount, categories (colour, plan, savings jar, tips), import / export, backup, theme |
+| More | Starting amount, categories (colour, plan, savings jar, tips), import / export, backup, theme, language and currency |
 
 ### Build from source
 
@@ -164,6 +165,7 @@ derivative keeps the copyright notice and the license text, i.e. credits beekama
 - ↩️ **Отмена** — удаление операции или категории, импорт, восстановление и сброс планов можно отменить.
 - 👆 **Жесты** — свайп по экрану листает вкладки, по шапке — месяцы, по переключателю — разделы; шторка смахивается вниз; кнопка «Назад» сначала закрывает шторки.
 - 🛡️ **Надёжное хранение** — база пишется по очереди в два файла, и оборванная запись не уносит предыдущую версию; повреждённые записи пропускаются поштучно и сохраняются для выгрузки; о неудачной записи приложение говорит; правки сохраняются при сворачивании; перед восстановлением из копии остаётся снимок для отката.
+- 🌍 **Языки и валюты** — русский, украинский или английский; рубль, гривна, доллар или евро. При первом запуске выбираются по языку и региону телефона, поменять можно в любой момент (суммы не пересчитываются).
 - 🎨 **Темы** — «Минимализм» или «Стекло» в стиле iPhone, каждая светлая, тёмная или как в системе. Анимации отключаются системной настройкой «Убрать анимацию».
 
 ### Установка
@@ -180,7 +182,7 @@ derivative keeps the copyright notice and the license text, i.e. credits beekama
 | Обзор | Остаток, начальная сумма, рост сбережений, доходы / расходы / отложено, круговая диаграмма, траты по дням |
 | Операции | Список по дням, фильтр, поиск, редактирование и удаление |
 | План | План / факт / разница по каждой категории, план на конкретный месяц |
-| Ещё | Начальная сумма, категории (цвет, план, копилка, чаевые), импорт / экспорт, резервная копия, тема |
+| Ещё | Начальная сумма, категории (цвет, план, копилка, чаевые), импорт / экспорт, резервная копия, тема, язык и валюта |
 
 ### Сборка из исходников
 

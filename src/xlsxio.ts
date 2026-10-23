@@ -1,7 +1,18 @@
 import * as XLSX from 'xlsx';
 import type { Category, Kind, State, Tx } from './model.ts';
-import { PALETTE, monthKey, monthTitle, uid, validDate } from './model.ts';
+import { PALETTE, monthKey, monthTitle, otherName, uid, validDate } from './model.ts';
 import { summarize } from './calc.ts';
+import { dict } from './i18n.ts';
+
+/* Локализованы только подписи, которых импорт не читает; листы, заголовки и «Итого» остаются русскими — экспорт должен импортироваться обратно */
+const t = dict({
+  ru: { summaryTitle: 'Сводка — {month}', endBal: 'Остаток на конец периода', savingsDelta: 'Изменение сбережений',
+    saved: 'Отложено (копилка)', tips: 'Чаевые', stash: 'В общем' },
+  uk: { summaryTitle: 'Зведення — {month}', endBal: 'Залишок на кінець періоду', savingsDelta: 'Зміна заощаджень',
+    saved: 'Відкладено (скарбничка)', tips: 'Чайові', stash: 'Загалом' },
+  en: { summaryTitle: 'Summary — {month}', endBal: 'Balance at end of period', savingsDelta: 'Change in savings',
+    saved: 'Set aside (savings)', tips: 'Tips', stash: 'Total' },
+});
 
 type Cell = string | number | boolean | Date | null | undefined;
 
@@ -59,10 +70,10 @@ export function importWorkbook(data: ArrayBuffer | Uint8Array, prev: State): Imp
   const newCategories: string[] = [];
 
   const findCat = (name: string, kind: Kind): Category => {
-    const n = norm(name) || (kind === 'expense' ? 'прочее' : 'прочие доходы');
+    const n = norm(name) || norm(otherName(kind));
     let cat = state.categories.find((c) => c.kind === kind && norm(c.name) === n);
     if (!cat) {
-      const label = name.trim() || (kind === 'expense' ? 'Прочее' : 'Прочие доходы');
+      const label = name.trim() || otherName(kind);
       cat = { id: uid(), name: label, kind, plan: 0, color: PALETTE[state.categories.length % PALETTE.length] };
       state.categories.push(cat);
       newCategories.push(label);
@@ -164,14 +175,14 @@ export function exportMonth(s: State, key: string): Uint8Array {
   const ruDate = (d: string) => `${d.slice(8, 10)}.${d.slice(5, 7)}.${d.slice(0, 4)}`;
 
   const summary: Cell[][] = [
-    [`Сводка — ${monthTitle(key)}`],
+    [t('summaryTitle', { month: monthTitle(key) })],
     [],
     ['Начальная сумма', m.start],
-    ['Остаток на конец периода', m.end],
-    ['Изменение сбережений', m.delta, m.deltaPct == null ? '' : `${(m.deltaPct * 100).toFixed(0)}%`],
-    ['Отложено (копилка)', m.saved],
-    ['Чаевые', m.tips],
-    ['В общем', m.stash],
+    [t('endBal'), m.end],
+    [t('savingsDelta'), m.delta, m.deltaPct == null ? '' : `${(m.deltaPct * 100).toFixed(0)}%`],
+    [t('saved'), m.saved],
+    [t('tips'), m.tips],
+    [t('stash'), m.stash],
     [],
     ['Расходы', 'Предполагаемые', 'Фактические', 'Разница', '', 'Доходы', 'Предполагаемые', 'Фактические', 'Разница'],
     ['Итого', m.expensePlanTotal, m.expenseTotal, m.expensePlanTotal - m.expenseTotal, '', 'Итого', m.incomePlan, m.income, m.income - m.incomePlan],

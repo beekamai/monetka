@@ -1,4 +1,11 @@
-import { monthTitle, rub } from './model.ts';
+import { monthTitle } from './model.ts';
+import { dict, money } from './i18n.ts';
+
+const t = dict({
+  ru: { daysIncome: 'Доходы по дням', daysExpense: 'Траты по дням', trend: 'Динамика по месяцам', income: 'доходы', expense: 'расходы', balance: 'остаток' },
+  uk: { daysIncome: 'Доходи за днями', daysExpense: 'Витрати за днями', trend: 'Динаміка за місяцями', income: 'доходи', expense: 'витрати', balance: 'залишок' },
+  en: { daysIncome: 'Income by day', daysExpense: 'Spending by day', trend: 'Trend by month', income: 'income', expense: 'expenses', balance: 'balance' },
+});
 import type { TrendPoint } from './calc.ts';
 
 export interface Slice { label: string; value: number; color: string }
@@ -21,7 +28,7 @@ export function Donut({ slices, total, caption }: { slices: Slice[]; total: numb
         acc += len;
         return el;
       })}
-      <text x="70" y="66" text-anchor="middle" class="donut-val">{rub(total)}</text>
+      <text x="70" y="66" text-anchor="middle" class="donut-val">{money(total)}</text>
       <text x="70" y="84" text-anchor="middle" class="donut-cap">{caption}</text>
     </svg>
   );
@@ -36,7 +43,7 @@ export function DayBars({ data, today, kind }: { data: Day[]; today?: number; ki
   const peak = data.reduce((a, d) => (val(d) > val(a) ? d : a), data[0]);
   const hi = kind === 'income' ? 'var(--pos)' : 'var(--accent)';
   return (
-    <svg viewBox={`0 0 ${W} ${H + 18}`} class="bars" role="img" aria-label={kind === 'income' ? 'Доходы по дням' : 'Траты по дням'}>
+    <svg viewBox={`0 0 ${W} ${H + 18}`} class="bars" role="img" aria-label={kind === 'income' ? t('daysIncome') : t('daysExpense')}>
       {data.map((d, i) => {
         const h = val(d) > 0 ? Math.max(3, (val(d) / max) * H) : 0;
         return (
@@ -45,7 +52,7 @@ export function DayBars({ data, today, kind }: { data: Day[]; today?: number; ki
             {h > 0 && (
               <rect class="bar" style={{ animationDelay: `${i * 12}ms` }} x={i * bw + bw * 0.15} y={H - h} width={bw * 0.7} height={h}
                 rx={Math.min(3, bw * 0.3)} fill={d.day === peak.day ? hi : kind === 'income' ? 'var(--bar-pos)' : 'var(--bar)'}>
-                <title>{`${d.day}: ${rub(val(d))}`}</title>
+                <title>{`${d.day}: ${money(val(d))}`}</title>
               </rect>
             )}
             {(d.day === 1 || d.day % 5 === 0 || d.day === today) && (
@@ -71,16 +78,16 @@ export function TrendChart({ points, current }: { points: TrendPoint[]; current:
   const line = points.map((p, i) => `${i ? 'L' : 'M'}${(i + 0.5) * slot},${y(p.end)}`).join(' ');
   const bar = (v: number) => (v > 0 ? Math.max(2, (v / maxBar) * (H - top)) : 0);
   return (
-    <svg viewBox={`0 0 ${W} ${H + 18}`} class="bars trend" role="img" aria-label="Динамика по месяцам">
+    <svg viewBox={`0 0 ${W} ${H + 18}`} class="bars trend" role="img" aria-label={t('trend')}>
       {points.map((p, i) => {
         const cx = (i + 0.5) * slot, hi1 = bar(p.income), ex = bar(p.spent + p.saved);
         return (
           <g key={p.key}>
             <rect class="bar" style={{ animationDelay: `${i * 50}ms` }} x={cx - bw - 1.5} y={H - hi1} width={bw} height={hi1} rx={3} fill="var(--pos)" opacity={0.85}>
-              <title>{`${monthTitle(p.key)}: доходы ${rub(p.income)}`}</title>
+              <title>{`${monthTitle(p.key)}: ${t('income')} ${money(p.income)}`}</title>
             </rect>
             <rect class="bar" style={{ animationDelay: `${i * 50 + 25}ms` }} x={cx + 1.5} y={H - ex} width={bw} height={ex} rx={3} fill="var(--bar)">
-              <title>{`${monthTitle(p.key)}: расходы ${rub(p.spent + p.saved)}`}</title>
+              <title>{`${monthTitle(p.key)}: ${t('expense')} ${money(p.spent + p.saved)}`}</title>
             </rect>
             <text x={cx} y={H + 14} text-anchor="middle" class={p.key === current ? 'bars-lbl today' : 'bars-lbl'}>{shortMonth(p.key)}</text>
           </g>
@@ -89,7 +96,7 @@ export function TrendChart({ points, current }: { points: TrendPoint[]; current:
       <path class="trend-line" d={line} fill="none" stroke="var(--accent)" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" pathLength={1} />
       {points.map((p, i) => (
         <circle cx={(i + 0.5) * slot} cy={y(p.end)} r={p.key === current ? 4 : 2.6} fill="var(--card)" stroke="var(--accent)" stroke-width="2">
-          <title>{`${monthTitle(p.key)}: остаток ${rub(p.end)}`}</title>
+          <title>{`${monthTitle(p.key)}: ${t('balance')} ${money(p.end)}`}</title>
         </circle>
       ))}
     </svg>

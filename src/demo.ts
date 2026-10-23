@@ -3,7 +3,8 @@ import type { State, Tx } from './model.ts';
 import { emptyState, monthKey, shiftMonth, todayISO, uid } from './model.ts';
 
 export function demoState(): State {
-  const s = emptyState();
+  // Демо собирается по русским именам категорий; перевод — translateStock в App
+  const s = emptyState('ru');
   const cat = (name: string) => s.categories.find((c) => c.name === name)!.id;
   let seed = 7;
   const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);

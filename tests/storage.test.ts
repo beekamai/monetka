@@ -45,6 +45,20 @@ const withTx = (s: State, amount: number): State => {
 };
 const noop = () => undefined;
 
+// 0. Признак первого запуска: только когда сохранённой базы нет совсем — от него зависит, останется ли база 1.x на ru/RUB
+reset();
+assert.equal((await load()).fresh, true, 'пустое хранилище — первый запуск');
+files.set('monetka/state-a.json', JSON.stringify({ seq: 1, state: emptyState() }));
+assert.ok(!(await load()).fresh, 'сохранённая база, даже пустая, — не первый запуск');
+reset();
+prefs.set('budget-state-v1', JSON.stringify(emptyState()));
+assert.ok(!(await load()).fresh, 'база 1.0 в Preferences — не первый запуск');
+reset();
+files.set('monetka/state-a.json', '{"seq":1,"state":{обрыв');
+const dmg = await load();
+assert.ok(!dmg.fresh, 'повреждённая база — не первый запуск');
+assert.equal(typeof dmg.notice, 'function', 'текст уведомления собирается при показе, на языке базы');
+
 // 1. Переезд с версии 1.0: данные из Preferences подхватываются
 reset();
 const legacy = withTx(emptyState(), 300);

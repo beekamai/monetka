@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
-    "test": "node --experimental-strip-types tests/calc.test.ts && node --experimental-strip-types tests/model.test.ts && node --experimental-strip-types --experimental-test-module-mocks --no-warnings tests/storage.test.ts"
+    "test": "node --experimental-strip-types tests/calc.test.ts && node --experimental-strip-types tests/model.test.ts && node --experimental-strip-types tests/i18n.test.ts && node --experimental-strip-types --experimental-test-module-mocks --no-warnings tests/storage.test.ts"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.3",

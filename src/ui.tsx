@@ -4,7 +4,13 @@ import { render } from 'preact';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { Capacitor } from '@capacitor/core';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
-import { rub } from './model.ts';
+import { dict, money } from './i18n.ts';
+
+const t = dict({
+  ru: { plus: 'Плюс', minus: 'Минус', close: 'Закрыть' },
+  uk: { plus: 'Плюс', minus: 'Мінус', close: 'Закрити' },
+  en: { plus: 'Plus', minus: 'Minus', close: 'Close' },
+});
 
 export const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -118,7 +124,7 @@ export function CalcKeys({ input, minus = true }: { input: { current: HTMLInputE
   return (
     <span class="calc-keys" data-noswipe>
       {(minus ? ['+', '−'] : ['+']).map((op) => (
-        <button type="button" aria-label={op === '+' ? 'Плюс' : 'Минус'} onMouseDown={(e) => e.preventDefault()} onClick={() => put(op)}>{op}</button>
+        <button type="button" aria-label={op === '+' ? t('plus') : t('minus')} onMouseDown={(e) => e.preventDefault()} onClick={() => put(op)}>{op}</button>
       ))}
     </span>
   );
@@ -173,7 +179,7 @@ export function Sheet({ title, onClose, children }: { title: string; onClose: ()
         style={dy ? { transform: `translateY(${dy}px)`, transition: 'none' } : undefined}>
         <div class="sheet-drag" {...head}>
           <div class="grab" />
-          <div class="sheet-head"><h3>{title}</h3><button class="icon-btn" aria-label="Закрыть" onClick={close}>✕</button></div>
+          <div class="sheet-head"><h3>{title}</h3><button class="icon-btn" aria-label={t('close')} onClick={close}>✕</button></div>
         </div>
         {children}
       </div>
@@ -234,11 +240,12 @@ export function Money({ value, class: cls }: { value: number; class?: string }) 
     const tick = (now: number) => {
       const p = Math.min(1, (now - t0) / dur), k = 1 - Math.pow(1 - p, 3);
       cur.current = a + (b - a) * k;
-      setShown(cur.current);
+      // Если итог целый, промежуточные кадры тоже целые: иначе на полсекунды мигают копейки
+      setShown(p < 1 && Number.isInteger(b) ? Math.round(cur.current) : cur.current);
       if (p < 1) raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
   }, [value]);
-  return <span class={cls}>{rub(shown)}</span>;
+  return <span class={cls}>{money(shown)}</span>;
 }
