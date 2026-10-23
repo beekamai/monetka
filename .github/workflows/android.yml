@@ -52,6 +52,19 @@ jobs:
           printf '%s' "$KEYSTORE_BASE64" | tr -d ' \r\n' | base64 -d > "$RUNNER_TEMP/release.keystore"
           echo "ANDROID_KEYSTORE=$RUNNER_TEMP/release.keystore" >> "$GITHUB_ENV"
 
+      # Play rejects the GitHub key (debug certificate), so the AAB is signed with a separate upload key;
+      # Play re-signs with its own app key, so Play and GitHub installs never update each other anyway
+      - name: Play upload key
+        if: env.PUBLISH == 'true'
+        env:
+          UPLOAD_BASE64: ${{ secrets.PLAY_UPLOAD_KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "$UPLOAD_BASE64" ]; then
+            echo "::error::PLAY_UPLOAD_KEYSTORE_BASE64 is not set: Google Play would reject the bundle"
+            exit 1
+          fi
+          printf '%s' "$UPLOAD_BASE64" | tr -d ' \r\n' | base64 -d > "$RUNNER_TEMP/upload.keystore"
+
       - name: Gradle build
         working-directory: android
         env:
@@ -61,14 +74,28 @@ jobs:
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           chmod +x gradlew
-          ./gradlew assembleRelease bundleRelease --no-daemon
+          ./gradlew assembleRelease --no-daemon
+          # APK — для установки напрямую, подписан ключом GitHub-релизов
           cp app/build/outputs/apk/release/app-release.apk ../Monetka-${{ github.run_number }}.apk
-          # AAB — для загрузки в Google Play, APK — для установки напрямую
+
+      - name: Gradle bundle
+        working-directory: android
+        env:
+          VERSION_CODE: ${{ github.run_number }}
+          UPLOAD_PASSWORD: ${{ secrets.PLAY_UPLOAD_KEYSTORE_PASSWORD }}
+          UPLOAD_ALIAS: ${{ secrets.PLAY_UPLOAD_KEY_ALIAS }}
+        run: |
+          if [ "$PUBLISH" = "true" ]; then
+            export ANDROID_KEYSTORE="$RUNNER_TEMP/upload.keystore" ANDROID_KEYSTORE_PASSWORD="$UPLOAD_PASSWORD" \
+              ANDROID_KEY_ALIAS="$UPLOAD_ALIAS" ANDROID_KEY_PASSWORD="$UPLOAD_PASSWORD"
+          fi
+          ./gradlew bundleRelease --no-daemon
+          # AAB — для загрузки в Google Play, подписан ключом загрузки
           cp app/build/outputs/bundle/release/app-release.aab ../Monetka-${{ github.run_number }}.aab
 
-      - name: Remove signing key
+      - name: Remove signing keys
         if: always()
-        run: rm -f "$RUNNER_TEMP/release.keystore"
+        run: rm -f "$RUNNER_TEMP/release.keystore" "$RUNNER_TEMP/upload.keystore"
 
       - uses: actions/upload-artifact@v7
         with:
